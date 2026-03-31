@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify tag matches version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/v}
+          VERSION=$(grep -oP '(?<=version = ")[^"]+' pyproject.toml)
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "::error::Tag version ($TAG) doesn't match pyproject.toml version ($VERSION)"
+            exit 1
+          fi
+          echo "✓ Version matches: $VERSION"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install build
+
+      - name: Build package
+        run: python -m build
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

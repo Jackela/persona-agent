@@ -1,0 +1,341 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, dev]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    branches: [main, master, dev]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  FORCE_COLOR: "1"
+
+jobs:
+  # ============================================
+  # Branch Protection - Block direct main PRs
+  # ============================================
+  block-main-pr:
+    name: Branch Protection
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Enforce dev branch workflow
+        run: |
+          if [ "${{ github.base_ref }}" = "main" ] || [ "${{ github.base_ref }}" = "master" ]; then
+            echo "::error::PRs to main/master branch are not allowed. Please target the 'dev' branch instead."
+            exit 1
+          fi
+
+  # ============================================
+  # Lint & Format Checks (Fast feedback)
+  # ============================================
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Check code formatting with black
+        run: |
+          black --check --diff src tests || {
+            echo "::error::Code formatting check failed. Run 'black src tests' to fix."
+            exit 1
+          }
+
+      - name: Lint with ruff
+        run: |
+          ruff check src tests || {
+            echo "::error::Linting failed. Run 'ruff check src tests --fix' to auto-fix."
+            exit 1
+          }
+
+      - name: Check import sorting with ruff
+        run: ruff check --select I src tests
+
+  # ============================================
+  # Type Checking
+  # ============================================
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Type check with mypy (strict)
+        run: |
+          mypy src --strict --show-error-codes || {
+            echo "::error::Type checking failed. Fix type errors above."
+            exit 1
+          }
+
+  # ============================================
+  # Test Suite (Matrix across Python versions)
+  # ============================================
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Run tests with pytest
+        run: |
+          pytest \
+            --cov=src/persona_agent \
+            --cov-report=xml \
+            --cov-report=term-missing:skip-covered \
+            --cov-fail-under=65 \
+            -v || {
+            echo "::error::Tests failed or coverage below 65%"
+            exit 1
+          }
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.12'
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # ============================================
+  # Security Audit
+  # ============================================
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+          pip install bandit[sarif] safety
+
+      - name: Run bandit security linter
+        run: |
+          bandit -r src -ll -ii -f sarif -o bandit-report.sarif || {
+            echo "::warning::Bandit found security issues"
+          }
+          bandit -r src -ll -ii -f screen
+
+      - name: Upload bandit report
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: bandit-report.sarif
+
+      - name: Check for known security vulnerabilities
+        run: |
+          safety check --full-report || {
+            echo "::warning::Safety check found vulnerabilities"
+          }
+
+  # ============================================
+  # Architecture & Import Checks
+  # ============================================
+  architecture:
+    name: Architecture Check
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Check for circular imports
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          try:
+              from persona_agent.core.agent_engine import AgentEngine
+              from persona_agent.skills.registry import SkillRegistry
+              from persona_agent.mcp.client import MCPClient
+              from persona_agent.core.persona_manager import PersonaManager
+              print('✓ No circular import issues detected')
+          except ImportError as e:
+              print(f'::error::Circular import detected: {e}')
+              sys.exit(1)
+          "
+
+      - name: Verify package structure
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          
+          # Check all expected modules can be imported
+          modules = [
+              'persona_agent',
+              'persona_agent.core',
+              'persona_agent.config',
+              'persona_agent.skills',
+              'persona_agent.mcp',
+              'persona_agent.utils',
+          ]
+          
+          for mod in modules:
+              try:
+                  __import__(mod)
+                  print(f'✓ {mod}')
+              except ImportError as e:
+                  print(f'::error::Failed to import {mod}: {e}')
+                  sys.exit(1)
+          "
+
+  # ============================================
+  # Build & Package Verification
+  # ============================================
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    needs: [test, typecheck, security]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install build dependencies
+        run: pip install build twine
+
+      - name: Build package
+        run: python -m build
+
+      - name: Verify build artifacts exist
+        run: |
+          test -f dist/*.whl || (echo "::error::wheel not found" && exit 1)
+          test -f dist/*.tar.gz || (echo "::error::sdist not found" && exit 1)
+          echo "✓ Build artifacts verified"
+
+      - name: Check package with twine
+        run: |
+          twine check dist/* || {
+            echo "::error::Twine validation failed"
+            exit 1
+          }
+
+      - name: Verify package installation
+        run: |
+          pip install dist/*.whl
+          python -c "import persona_agent; print(f'✓ persona-agent {persona_agent.__version__} installed')"
+
+  # ============================================
+  # Documentation Checks
+  # ============================================
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check README exists
+        run: |
+          test -f README.md || (echo "::error::README.md is required" && exit 1)
+          echo "✓ README.md exists"
+
+      - name: Check required README sections
+        run: |
+          for section in "Installation" "Usage" "Features" "## "; do
+            if grep -q "^##*.*${section}" README.md; then
+              echo "✓ README has ${section} section"
+            else
+              echo "⚠️ README might be missing ${section} section"
+            fi
+          done
+
+      - name: Check CHANGELOG exists
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            echo "✓ CHANGELOG.md exists"
+          else
+            echo "⚠️ CHANGELOG.md not found (recommended)"
+          fi
+
+      - name: Verify docstring coverage
+        run: |
+          pip install pydocstyle
+          pydocstyle src --count || true
+
+  # ============================================
+  # Workflow Linting (Meta-check)
+  # ============================================
+  lint-workflows:
+    name: Lint Workflow Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install actionlint
+        run: |
+          bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+
+      - name: Run actionlint
+        run: ./actionlint -color

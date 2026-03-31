@@ -1,0 +1,17 @@
+# Global code owners
+* @yourusername
+
+# Core engine
+/src/persona_agent/core/ @yourusername
+
+# Configuration
+/src/persona_agent/config/ @yourusername
+
+# Skills system
+/src/persona_agent/skills/ @yourusername
+
+# MCP integration
+/src/persona_agent/mcp/ @yourusername
+
+# CI/CD
+/.github/workflows/ @yourusername

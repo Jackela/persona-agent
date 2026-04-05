@@ -63,6 +63,9 @@ Issues = "https://github.com/yourusername/persona-agent/issues"
 [tool.hatch.build.targets.wheel]
 packages = ["src/persona_agent"]
 
+[tool.hatch.build]
+sources = ["src"]
+
 [tool.black]
 line-length = 100
 target-version = ['py311']

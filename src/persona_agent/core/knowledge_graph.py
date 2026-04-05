@@ -261,7 +261,7 @@ class KnowledgeGraph:
         similarities.sort(key=lambda x: x[1], reverse=True)
         return similarities[:top_k]
 
-    def extract_subgraph(self, entity_names: list[str], depth: int = 1) -> "KnowledgeGraph":
+    def extract_subgraph(self, entity_names: list[str], depth: int = 1) -> KnowledgeGraph:
         """Extract a subgraph around specified entities.
 
         Args:
@@ -279,7 +279,7 @@ class KnowledgeGraph:
                 continue
 
             # Get entities within depth
-            for target, distance in nx.single_source_shortest_path_length(
+            for target, _distance in nx.single_source_shortest_path_length(
                 self.graph, entity_name, cutoff=depth
             ):
                 included_entities.add(target)
@@ -341,11 +341,7 @@ class KnowledgeGraph:
         if name in self.entities:
             return True
 
-        for entity in self.entities.values():
-            if name in entity.original_names:
-                return True
-
-        return False
+        return any(name in entity.original_names for entity in self.entities.values())
 
     def contradicts(self, claim: str, entity_name: str) -> bool:
         """Check if a claim contradicts known facts about an entity.

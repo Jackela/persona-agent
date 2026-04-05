@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from typing import Any, Protocol
 
 try:
-    import networkx as nx
+    import networkx as nx  # noqa: F401
 
     NETWORKX_AVAILABLE = True
 except ImportError:
@@ -326,7 +326,7 @@ class EpisodicMemory:
 
         # Convert to MemoryEntry and update access stats
         results: list[MemoryEntry] = []
-        for entry, score in scored_entries[:top_k]:
+        for entry, _score in scored_entries[:top_k]:
             entry.access_count += 1
             entry.last_accessed = datetime.now()
 
@@ -614,7 +614,7 @@ class SemanticMemory:
             for match in re.finditer(pattern, text, re.IGNORECASE):
                 entities.add(match.group(1).lower())
 
-        return sorted(list(entities))
+        return sorted(entities)
 
     def get_related_entities(self, entity: str, depth: int = 1) -> list[str]:
         """Get entities related within N hops in the knowledge graph.
@@ -661,7 +661,7 @@ class SemanticMemory:
             if not current_level:
                 break
 
-        return sorted(list(related))
+        return sorted(related)
 
     def find_path(self, entity1: str, entity2: str) -> list[dict] | None:
         """Find relationship path between two entities.

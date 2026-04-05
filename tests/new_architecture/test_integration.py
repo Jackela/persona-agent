@@ -8,8 +8,8 @@ This module tests the integration of all new architecture components:
 - AdaptiveUserModeling
 """
 
+
 import pytest
-from datetime import datetime
 
 from persona_agent.core.cognitive_emotional_engine import (
     CognitiveEmotionalEngine,
@@ -19,19 +19,17 @@ from persona_agent.core.cognitive_emotional_engine import (
 from persona_agent.core.consistency_validator import ConsistencyValidator, ValidationConfig
 from persona_agent.core.hierarchical_memory import HierarchicalMemory, RetrievalContext
 from persona_agent.core.prompt_engine import (
-    LayeredPromptEngine,
     EntityType,
-    create_layered_prompt_engine,
+    LayeredPromptEngine,
 )
 from persona_agent.core.schemas import (
+    BehavioralMatrix,
+    CognitiveState,
     CoreIdentity,
     CoreValues,
-    BehavioralMatrix,
     DynamicContext,
     EmotionalState,
     RelationshipState,
-    CognitiveState,
-    TaskContext,
 )
 from persona_agent.core.user_modeling import (
     AdaptiveUserModeling,
@@ -167,7 +165,7 @@ class TestCognitiveEmotionalEngineIntegration:
 
     def test_emotion_time_decay(self, emotional_engine):
         """Test emotional state decay over time."""
-        initial_state = EmotionalState(
+        _ = EmotionalState(
             valence=0.8,
             arousal=0.9,
             intensity=0.9,
@@ -355,9 +353,9 @@ class TestConsistencyValidatorIntegration:
 
     def test_validation_scoring(self, validator):
         """Test validation scoring without LLM."""
-        from persona_agent.core.schemas import DynamicContext
-
         import asyncio
+
+        from persona_agent.core.schemas import DynamicContext
 
         result = asyncio.run(
             validator.validate(
@@ -374,9 +372,9 @@ class TestConsistencyValidatorIntegration:
 
     def test_validation_checks(self, validator):
         """Test individual validation checks."""
-        from persona_agent.core.schemas import DynamicContext
-
         import asyncio
+
+        from persona_agent.core.schemas import DynamicContext
 
         result = asyncio.run(
             validator.validate(

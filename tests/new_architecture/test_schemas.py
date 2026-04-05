@@ -1,22 +1,22 @@
 """Tests for LayeredPromptEngine and RoleRAG integration."""
 
-import pytest
-from datetime import datetime
 
+import pytest
+
+from persona_agent.core.knowledge_graph import Entity, KnowledgeGraph, Relation
 from persona_agent.core.schemas import (
+    BehavioralMatrix,
+    CognitiveState,
     CoreIdentity,
     CoreValues,
-    BehavioralMatrix,
     DynamicContext,
     EmotionalState,
-    RelationshipState,
-    CognitiveState,
-    KnowledgeContext,
-    TaskContext,
     KnowledgeBoundary,
+    KnowledgeContext,
     LayeredPrompt,
+    RelationshipState,
+    TaskContext,
 )
-from persona_agent.core.knowledge_graph import KnowledgeGraph, Entity, Relation
 
 
 class TestCoreIdentity:

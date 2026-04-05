@@ -1,14 +1,13 @@
 """Tests for Cognitive-Emotional Dual-Path Architecture."""
 
-import pytest
 from datetime import datetime, timedelta
 
+import pytest
+
 from persona_agent.core.schemas import (
-    EmotionalState,
-    CognitiveState,
-    DynamicContext,
     CognitiveOutput,
     EmotionalOutput,
+    EmotionalState,
     FusedState,
     WorkingMemory,
 )

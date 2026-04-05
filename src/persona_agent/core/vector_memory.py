@@ -13,7 +13,6 @@ from typing import Any
 
 try:
     import chromadb
-    from chromadb.config import Settings
 
     CHROMA_AVAILABLE = True
 except ImportError:
@@ -47,12 +46,8 @@ class VectorMemoryStore:
         self.chroma_path.parent.mkdir(parents=True, exist_ok=True)
 
         if CHROMA_AVAILABLE:
-            self.chroma_client = chromadb.Client(
-                Settings(
-                    chroma_db_impl="duckdb+parquet",
-                    persist_directory=str(self.chroma_path),
-                )
-            )
+            # Use PersistentClient instead of deprecated Client()
+            self.chroma_client = chromadb.PersistentClient(path=str(self.chroma_path))
             self.collection = self.chroma_client.get_or_create_collection(
                 name="conversations",
                 metadata={"hnsw:space": "cosine"},
@@ -203,6 +198,5 @@ class VectorMemoryStore:
 
     def close(self) -> None:
         """Close all connections."""
-        if self.chroma_client:
-            self.chroma_client.persist()
+        # PersistentClient auto-persists, only close SQLite
         self.sqlite_store.close()

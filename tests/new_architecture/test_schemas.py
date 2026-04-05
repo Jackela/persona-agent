@@ -270,6 +270,13 @@ class TestKnowledgeGraph:
         graph.add_entity(anakin)
         graph.add_entity(vader)
 
+        # Add Luke Skywalker entity (needed for relation)
+        luke = Entity(name="Luke Skywalker", entity_type="character")
+        graph.add_entity(luke)
+
+        # Add a relation to the alias
+        graph.add_entity(vader)
+
         # Add a relation to the alias
         graph.add_relation(
             Relation(

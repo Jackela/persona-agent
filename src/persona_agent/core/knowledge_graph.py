@@ -405,10 +405,18 @@ class KnowledgeGraph:
                     if relation.target == alias:
                         relation.target = canonical_name
 
-                # Remove alias entity
-                del self.entities[alias]
+                # Redirect edges in graph before removing alias node
                 if self.graph.has_node(alias):
-                    self.graph.remove_node(alias)
+                    # Get all edges from alias
+                    for _, target, data in list(self.graph.edges(alias, data=True)):
+                        self.graph.add_edge(canonical_name, target, **data)
+                    # Get all edges to alias
+                    for source, _, data in list(self.graph.in_edges(alias, data=True)):
+                        if source != canonical_name:  # Avoid self-loop
+                            self.graph.add_edge(source, canonical_name, **data)
+                    # Remove alias node
+                # Remove alias entity from dict
+                del self.entities[alias]
 
         logger.info(f"Merged {len(aliases)} aliases into {canonical_name}")
 

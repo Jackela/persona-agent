@@ -8,7 +8,6 @@ This module tests the integration of all new architecture components:
 - AdaptiveUserModeling
 """
 
-
 import pytest
 
 from persona_agent.core.cognitive_emotional_engine import (

@@ -1,6 +1,5 @@
 """Tests for LayeredPromptEngine and RoleRAG integration."""
 
-
 import pytest
 
 from persona_agent.core.knowledge_graph import Entity, KnowledgeGraph, Relation

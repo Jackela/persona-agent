@@ -128,13 +128,16 @@ jobs:
         run: |
           PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
           export PYTHONPATH
-          python -c "import persona_agent; print(f'✓ persona_agent {persona_agent.__version__}')"
+          echo "PYTHONPATH=$PYTHONPATH"
+          python -c "import persona_agent; print(f'✓ persona_agent {persona_agent.__version__}')" || { echo "FAILED to import persona_agent"; exit 1; }
 
       - name: Run tests with pytest
         run: |
           PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
           export PYTHONPATH
-          pytest -v || {
+          echo "PYTHONPATH=$PYTHONPATH"
+          python -c "import persona_agent; print('Testing import of persona_agent...')"
+          pytest -v 2>&1 || {
             echo "::error::Tests failed"
             exit 1
           }

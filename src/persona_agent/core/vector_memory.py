@@ -15,8 +15,8 @@ try:
     import chromadb
 
     CHROMA_AVAILABLE = True
-
-    CHROMA_AVAILABLE = True
+except ImportError:
+    CHROMA_AVAILABLE = False
 except ImportError:
     CHROMA_AVAILABLE = False
 

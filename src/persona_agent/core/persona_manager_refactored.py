@@ -14,7 +14,7 @@ from persona_agent.config.loader import ConfigLoader
 from persona_agent.config.schemas.character import CharacterProfile
 from persona_agent.config.schemas.linguistic import LinguisticStyle
 from persona_agent.core.mood_engine import MoodEngine
-from persona_agent.core.prompt_engine import LayeredPromptEngine, create_layered_prompt_engine
+from persona_agent.core.prompt_engine import LayeredPromptEngine
 from persona_agent.core.schemas import (
     BehavioralMatrix,
     CoreIdentity,

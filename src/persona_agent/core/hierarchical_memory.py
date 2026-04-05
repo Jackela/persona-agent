@@ -692,9 +692,9 @@ class SemanticMemory:
                     {
                         "from": source,
                         "to": target,
-                        "predicate": edge_data.get("predicate", "related_to")
-                        if edge_data
-                        else "related_to",
+                        "predicate": (
+                            edge_data.get("predicate", "related_to") if edge_data else "related_to"
+                        ),
                     }
                 )
 

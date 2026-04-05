@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import json
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from persona_agent.core.schemas import (
@@ -589,7 +589,9 @@ class EmotionalPathway:
                 e["label"]
                 for e in emotional_output.detected_emotions[1:]
                 if e.get("intensity", 0) > 0.2
-            ][:3]  # Keep top 3 secondary emotions
+            ][
+                :3
+            ]  # Keep top 3 secondary emotions
         else:
             secondary = []
 

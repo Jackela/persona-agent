@@ -24,7 +24,7 @@ from persona_agent.core.consistency_validator import ConsistencyValidator, Valid
 from persona_agent.core.hierarchical_memory import HierarchicalMemory
 from persona_agent.core.memory_store import MemoryStore
 from persona_agent.core.persona_manager import PersonaManager
-from persona_agent.core.prompt_engine import LayeredPromptEngine, create_layered_prompt_engine
+from persona_agent.core.prompt_engine import create_layered_prompt_engine
 from persona_agent.core.schemas import (
     CoreIdentity,
     DynamicContext,
@@ -131,9 +131,9 @@ class NewArchitectureAgentEngine:
                 },
                 behavioral_matrix={
                     "must_always": [],
-                    "must_never": char.forbidden_topics
-                    if hasattr(char, "forbidden_topics")
-                    else [],
+                    "must_never": (
+                        char.forbidden_topics if hasattr(char, "forbidden_topics") else []
+                    ),
                     "should_avoid": [],
                 },
             )
@@ -158,9 +158,9 @@ class NewArchitectureAgentEngine:
             {
                 "name": self.core_identity.name,
                 "backstory": self.core_identity.backstory,
-                "core_values": self.core_identity.values.dict()
-                if self.core_identity.values
-                else {},
+                "core_values": (
+                    self.core_identity.values.dict() if self.core_identity.values else {}
+                ),
                 "knowledge_domains": self.knowledge_boundary.known_domains,
             },
             llm_client=self.llm_client,
@@ -349,9 +349,9 @@ class NewArchitectureAgentEngine:
                         "trust": user_model.trust_level,
                         "respect": 0.5,
                         "familiarity": user_model.familiarity,
-                        "current_stage": "established"
-                        if user_model.interaction_count > 10
-                        else "developing",
+                        "current_stage": (
+                            "established" if user_model.interaction_count > 10 else "developing"
+                        ),
                         "interaction_count": user_model.interaction_count,
                     }
                 else:

@@ -9,13 +9,11 @@ This module defines the base data models for:
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Generic, Protocol, TypeVar
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
-
 
 # ============================================================================
 # Layer 1: Core Identity (Static)
@@ -213,21 +211,21 @@ class LayeredPrompt(BaseModel):
         lines.append("# Core Identity")
         lines.append(f"You are {self.core_identity.name}.")
         if self.core_identity.backstory:
-            lines.append(f"\n## Backstory")
+            lines.append("\n## Backstory")
             lines.append(self.core_identity.backstory)
 
         if self.core_identity.values.values:
-            lines.append(f"\n## Core Values")
+            lines.append("\n## Core Values")
             for value in self.core_identity.values.values:
                 lines.append(f"- {value}")
 
         if self.core_identity.behavioral_matrix.must_always:
-            lines.append(f"\n## Must Always")
+            lines.append("\n## Must Always")
             for item in self.core_identity.behavioral_matrix.must_always:
                 lines.append(f"- {item}")
 
         if self.core_identity.behavioral_matrix.must_never:
-            lines.append(f"\n## Must Never")
+            lines.append("\n## Must Never")
             for item in self.core_identity.behavioral_matrix.must_never:
                 lines.append(f"- {item}")
 
@@ -236,7 +234,7 @@ class LayeredPrompt(BaseModel):
 
         # Emotional state
         emotional = self.dynamic_context.emotional
-        lines.append(f"\n## Emotional State")
+        lines.append("\n## Emotional State")
         lines.append(f"- Primary emotion: {emotional.primary_emotion}")
         lines.append(f"- Valence: {emotional.valence:.2f} (-1=negative, +1=positive)")
         lines.append(f"- Arousal: {emotional.arousal:.2f} (0=calm, 1=excited)")
@@ -244,7 +242,7 @@ class LayeredPrompt(BaseModel):
 
         # Social state
         social = self.dynamic_context.social
-        lines.append(f"\n## Relationship")
+        lines.append("\n## Relationship")
         lines.append(f"- Intimacy: {social.intimacy:.2f}")
         lines.append(f"- Trust: {social.trust:.2f}")
         lines.append(f"- Stage: {social.current_stage}")
@@ -256,11 +254,11 @@ class LayeredPrompt(BaseModel):
                 lines.append(f"- [{knowledge.source}]: {knowledge.content}")
 
         if self.knowledge_context.task.instructions:
-            lines.append(f"\n# Task")
+            lines.append("\n# Task")
             lines.append(self.knowledge_context.task.instructions)
 
         if self.knowledge_context.boundaries.known_domains:
-            lines.append(f"\n# Knowledge Domains")
+            lines.append("\n# Knowledge Domains")
             lines.append(
                 f"You know about: {', '.join(self.knowledge_context.boundaries.known_domains)}"
             )

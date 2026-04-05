@@ -29,7 +29,6 @@ from persona_agent.core.schemas import (
     KnowledgeContext,
     LayeredPrompt,
     MemoryEntry,
-    MemoryType,
     RetrievedKnowledge,
     SemanticMemory,
     TaskContext,
@@ -923,7 +922,7 @@ def create_layered_prompt_engine(
         Configured LayeredPromptEngine
     """
     # Build CoreIdentity from profile
-    from persona_agent.core.schemas import CoreValues, BehavioralMatrix
+    from persona_agent.core.schemas import BehavioralMatrix, CoreValues
 
     core_values_data = character_profile.get("core_values", {})
     if isinstance(core_values_data, dict):

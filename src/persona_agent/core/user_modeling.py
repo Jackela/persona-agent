@@ -18,7 +18,6 @@ from __future__ import annotations
 import json
 import logging
 from abc import ABC, abstractmethod
-from collections import deque
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -1094,15 +1093,15 @@ Sentiment score:"""
                 "total": len(model.preferences),
                 "by_category": {
                     cat: len(model.get_preferences_by_category(cat))
-                    for cat in set(p.category for p in model.preferences.values())
+                    for cat in {p.category for p in model.preferences.values()}
                 },
             },
             "conclusions": len(model.conclusions),
             "emotional_triggers": len(model.emotional_triggers),
             "first_interaction": model.first_interaction_at.isoformat(),
-            "last_interaction": model.last_interaction_at.isoformat()
-            if model.last_interaction_at
-            else None,
+            "last_interaction": (
+                model.last_interaction_at.isoformat() if model.last_interaction_at else None
+            ),
         }
 
 

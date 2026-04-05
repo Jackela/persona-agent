@@ -377,11 +377,8 @@ class KnowledgeGraph:
             True if claim is supported
         """
         entity = self.get_entity(entity_name)
-        if not entity:
-            return False
-
         # This is a placeholder - would need LLM-based support detection
-        return True
+        return entity is not None
 
     def merge_entities(self, canonical_name: str, aliases: list[str]) -> None:
         """Merge multiple entity names into a canonical entity.

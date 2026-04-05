@@ -22,7 +22,6 @@ from pydantic import BaseModel, Field, field_validator
 from persona_agent.core.schemas import (
     CoreIdentity,
     DynamicContext,
-    ValidationCheck,
     ValidationResult,
 )
 from persona_agent.utils.llm_client import LLMClient
@@ -556,7 +555,7 @@ class ConsistencyValidator:
             # Return a failed validation report rather than crashing
             return ValidationReport(
                 overall_score=0.0,
-                dimension_scores={dim: 0.0 for dim in ConsistencyScore.DIMENSIONS},
+                dimension_scores=dict.fromkeys(ConsistencyScore.DIMENSIONS, 0.0),
                 violations=[
                     {
                         "dimension": "validation_system",
@@ -727,17 +726,21 @@ class ConsistencyValidator:
 
         prompt = VALIDATION_PROMPTS["self_critique"].format(
             character_name=self.core_identity.name,
-            core_values=", ".join(self.core_identity.values.values)
-            if self.core_identity.values.values
-            else "None defined",
-            backstory=self.core_identity.backstory[:500]
-            if self.core_identity.backstory
-            else "Not specified",
+            core_values=(
+                ", ".join(self.core_identity.values.values)
+                if self.core_identity.values.values
+                else "None defined"
+            ),
+            backstory=(
+                self.core_identity.backstory[:500]
+                if self.core_identity.backstory
+                else "Not specified"
+            ),
             response=response,
             validation_scores="\n".join(scores_text),
-            violations="\n".join(violations_text)
-            if violations_text
-            else "No specific violations recorded",
+            violations=(
+                "\n".join(violations_text) if violations_text else "No specific violations recorded"
+            ),
         )
 
         messages = [
@@ -793,18 +796,26 @@ class ConsistencyValidator:
 
         prompt = VALIDATION_PROMPTS["revision"].format(
             character_name=self.core_identity.name,
-            core_values=", ".join(self.core_identity.values.values)
-            if self.core_identity.values.values
-            else "None defined",
-            must_always=", ".join(self.core_identity.behavioral_matrix.must_always)
-            if self.core_identity.behavioral_matrix.must_always
-            else "None",
-            must_never=", ".join(self.core_identity.behavioral_matrix.must_never)
-            if self.core_identity.behavioral_matrix.must_never
-            else "None",
-            backstory=self.core_identity.backstory[:500]
-            if self.core_identity.backstory
-            else "Not specified",
+            core_values=(
+                ", ".join(self.core_identity.values.values)
+                if self.core_identity.values.values
+                else "None defined"
+            ),
+            must_always=(
+                ", ".join(self.core_identity.behavioral_matrix.must_always)
+                if self.core_identity.behavioral_matrix.must_always
+                else "None"
+            ),
+            must_never=(
+                ", ".join(self.core_identity.behavioral_matrix.must_never)
+                if self.core_identity.behavioral_matrix.must_never
+                else "None"
+            ),
+            backstory=(
+                self.core_identity.backstory[:500]
+                if self.core_identity.backstory
+                else "Not specified"
+            ),
             original_response=original,
             critique=critique,
             failed_dimensions="\n".join(failed_dims) if failed_dims else "None",
@@ -858,15 +869,21 @@ class ConsistencyValidator:
         # Value alignment prompt
         prompts["value_alignment"] = VALIDATION_PROMPTS["value_alignment"].format(
             character_name=self.core_identity.name,
-            core_values=", ".join(self.core_identity.values.values)
-            if self.core_identity.values.values
-            else "None defined",
-            must_always=", ".join(self.core_identity.behavioral_matrix.must_always)
-            if self.core_identity.behavioral_matrix.must_always
-            else "None",
-            must_never=", ".join(self.core_identity.behavioral_matrix.must_never)
-            if self.core_identity.behavioral_matrix.must_never
-            else "None",
+            core_values=(
+                ", ".join(self.core_identity.values.values)
+                if self.core_identity.values.values
+                else "None defined"
+            ),
+            must_always=(
+                ", ".join(self.core_identity.behavioral_matrix.must_always)
+                if self.core_identity.behavioral_matrix.must_always
+                else "None"
+            ),
+            must_never=(
+                ", ".join(self.core_identity.behavioral_matrix.must_never)
+                if self.core_identity.behavioral_matrix.must_never
+                else "None"
+            ),
             response=response,
             emotional_state=dynamic_context.emotional.primary_emotion,
             user_intent=dynamic_context.user_intent,
@@ -875,9 +892,11 @@ class ConsistencyValidator:
         # Personality consistency prompt
         prompts["personality_consistency"] = VALIDATION_PROMPTS["personality_consistency"].format(
             character_name=self.core_identity.name,
-            backstory=self.core_identity.backstory[:500]
-            if self.core_identity.backstory
-            else "Not specified",
+            backstory=(
+                self.core_identity.backstory[:500]
+                if self.core_identity.backstory
+                else "Not specified"
+            ),
             traits=", ".join(
                 [f"{k}={v}" for k, v in self.core_identity.values.model_dump().items() if v]
             ),
@@ -889,9 +908,9 @@ class ConsistencyValidator:
         # Historical coherence prompt
         prompts["historical_coherence"] = VALIDATION_PROMPTS["historical_coherence"].format(
             character_name=self.core_identity.name,
-            conversation_history="\n".join(history_text)
-            if history_text
-            else "No prior conversation",
+            conversation_history=(
+                "\n".join(history_text) if history_text else "No prior conversation"
+            ),
             response=response,
         )
 
@@ -912,9 +931,11 @@ class ConsistencyValidator:
             topic=dynamic_context.topic,
             user_intent=dynamic_context.user_intent,
             conversation_turn=dynamic_context.conversation_turn,
-            active_goals=", ".join(dynamic_context.cognitive.active_goals)
-            if dynamic_context.cognitive.active_goals
-            else "None",
+            active_goals=(
+                ", ".join(dynamic_context.cognitive.active_goals)
+                if dynamic_context.cognitive.active_goals
+                else "None"
+            ),
             response=response,
         )
 

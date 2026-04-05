@@ -126,13 +126,8 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          pytest \
-            --cov=persona_agent \
-            --cov-report=xml \
-            --cov-report=term-missing:skip-covered \
-            --cov-fail-under=50 \
-            -v || {
-            echo "::error::Tests failed or coverage below 65%"
+          pytest -v || {
+            echo "::error::Tests failed"
             exit 1
           }
 

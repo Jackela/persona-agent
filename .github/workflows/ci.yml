@@ -125,22 +125,10 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Verify package imports
-        run: |
-          PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
-          export PYTHONPATH
-          echo "PYTHONPATH=$PYTHONPATH"
-          python -c "import persona_agent; print(f'✓ persona_agent {persona_agent.__version__}')" || { echo "FAILED to import persona_agent"; exit 1; }
+        run: PYTHONPATH="${PYTHONPATH}:$(pwd)/src" python -c "import persona_agent; print(f'✓ persona_agent {persona_agent.__version__}')"
 
       - name: Run tests with pytest
-        run: |
-          PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
-          export PYTHONPATH
-          echo "PYTHONPATH=$PYTHONPATH"
-          python -c "import persona_agent; print('Testing import of persona_agent...')"
-          pytest -v 2>&1 || {
-            echo "::error::Tests failed"
-            exit 1
-          }
+        run: PYTHONPATH="${PYTHONPATH}:$(pwd)/src" pytest -v
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

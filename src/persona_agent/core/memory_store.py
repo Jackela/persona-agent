@@ -70,8 +70,7 @@ class MemoryStore:
         """Initialize database schema."""
         with sqlite3.connect(self.db_path) as conn:
             # Conversations table
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS conversations (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT NOT NULL,
@@ -81,12 +80,10 @@ class MemoryStore:
                     embedding TEXT,  -- JSON array
                     metadata TEXT    -- JSON object
                 )
-            """
-            )
+            """)
 
             # User models table (Honcho-inspired)
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS user_models (
                     user_id TEXT PRIMARY KEY,
                     traits TEXT,      -- JSON object
@@ -96,12 +93,10 @@ class MemoryStore:
                     created_at REAL,
                     updated_at REAL
                 )
-            """
-            )
+            """)
 
             # Memory summaries (for long-term context)
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS memory_summaries (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT NOT NULL,
@@ -109,22 +104,17 @@ class MemoryStore:
                     key_points TEXT,  -- JSON array
                     timestamp REAL NOT NULL
                 )
-            """
-            )
+            """)
 
             # Create indexes
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_conversations_session
                 ON conversations(session_id)
-            """
-            )
-            conn.execute(
-                """
+            """)
+            conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_conversations_timestamp
                 ON conversations(timestamp)
-            """
-            )
+            """)
 
             conn.commit()
 

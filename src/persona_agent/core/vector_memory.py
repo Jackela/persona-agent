@@ -17,8 +17,6 @@ try:
     CHROMA_AVAILABLE = True
 except ImportError:
     CHROMA_AVAILABLE = False
-except ImportError:
-    CHROMA_AVAILABLE = False
 
 from persona_agent.core.memory_store import MemoryStore as SQLiteMemoryStore
 

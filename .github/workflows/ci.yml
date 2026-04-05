@@ -93,11 +93,7 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Type check with mypy (strict)
-        run: |
-          mypy src --show-error-codes --config-file=mypy.ini || {
-            echo "::error::Type checking failed. Fix type errors above."
-            exit 1
-          }
+        run: mypy src --show-error-codes --config-file=mypy.ini
 
   # ============================================
   # Test Suite (Matrix across Python versions)

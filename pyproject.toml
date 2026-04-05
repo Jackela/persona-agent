@@ -37,6 +37,7 @@ dependencies = [
     "tiktoken>=0.5",
     "watchdog>=3.0",
     "typer>=0.9",
+    "networkx>=3.0",
 ]
 
 [project.optional-dependencies]

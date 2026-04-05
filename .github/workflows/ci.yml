@@ -123,6 +123,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e ".[dev]"
+          pip show persona-agent
+          pip list | grep persona
 
       - name: Verify package imports
         run: PYTHONPATH="${PYTHONPATH}:$(pwd)/src" python -c "import persona_agent; print(f'✓ persona_agent {persona_agent.__version__}')"

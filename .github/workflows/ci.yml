@@ -94,14 +94,7 @@ jobs:
 
       - name: Type check with mypy (strict)
         run: |
-          echo "=== Python version ==="
-          python --version
-          echo "=== mypy version ==="
-          mypy --version
-          echo "=== pyproject.toml exists? ==="
-          test -f pyproject.toml && echo "YES" || echo "NO"
-          echo "=== Running mypy ==="
-          mypy src --strict --show-error-codes --config-file=pyproject.toml || {
+          mypy src --show-error-codes --config-file=mypy.ini || {
             echo "::error::Type checking failed. Fix type errors above."
             exit 1
           }

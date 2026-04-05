@@ -389,8 +389,8 @@ class TestConsistencyValidatorIntegration:
         # Verify violations exist (populated when validation fails without LLM)
         assert result.violations
         for violation in result.violations:
-            assert violation.get('dimension')
-            assert violation.get('severity')
+            assert violation.get("dimension")
+            assert violation.get("severity")
 
 
 class TestUserModelingIntegration:

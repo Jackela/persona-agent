@@ -91,9 +91,14 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e ".[dev]"
+          pip install types-click types-PyYAML
 
       - name: Type check with mypy (strict)
-        run: mypy src --show-error-codes --config-file=mypy.ini
+        run: |
+          mypy src --show-error-codes --config-file=mypy.ini 2>&1 || {
+            echo "--- MYPY FAILED ---";
+            exit 1;
+          }
 
   # ============================================
   # Test Suite (Matrix across Python versions)

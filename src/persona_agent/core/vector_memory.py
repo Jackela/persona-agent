@@ -200,6 +200,5 @@ class VectorMemoryStore:
 
     def close(self) -> None:
         """Close all connections."""
-        if self.chroma_client:
-            self.chroma_client.persist()
+        # PersistentClient auto-persists, only close SQLite
         self.sqlite_store.close()

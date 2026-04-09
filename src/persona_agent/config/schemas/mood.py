@@ -55,8 +55,11 @@ class MoodDefinition(BaseModel):
         moods = []
 
         # Parse markdown sections (## headers)
-        # Pattern matches: ## 1. Name (Description)
-        sections = re.split(r"\n## \d+#\w+\|", content)
+        # Pattern matches: ## 1. Name (Description) or ## Name: Description
+        sections = re.split(r"\n##\s+", content)
+
+        # Filter out empty sections and the content before first header
+        sections = [s for s in sections if s.strip()]
 
         for section in sections:
             if not section.strip():
@@ -103,32 +106,50 @@ class MoodDefinition(BaseModel):
         current_field = None
         current_content = []
 
+        def save_current_field():
+            nonlocal current_field, current_content, triggers, core_posture, language_style, mixing
+            if current_field == "triggers":
+                triggers = current_content
+            elif current_field == "core_posture":
+                core_posture = "\n".join(current_content).strip()
+            elif current_field == "language_style":
+                language_style = "\n".join(current_content).strip()
+            elif current_field == "mixing_guidance":
+                mixing = "\n".join(current_content).strip()
+            elif current_field == "behaviors":
+                behaviors = current_content
+
         for line in lines[1:]:
             line = line.strip()
 
             # Check for field headers
             if line.startswith("**触发器:**"):
-                if current_field and current_content:
-                    setattr(
-                        cls,
-                        current_field,
-                        "\n".join(current_content).strip(),
-                    )
+                save_current_field()
                 current_field = "triggers"
-                current_content = [line.replace("**触发器:**", "").strip()]
+                trigger_text = line.replace("**触发器:**", "").strip()
+                # Split comma-separated values
+                current_content = [t.strip() for t in trigger_text.split(",") if t.strip()]
             elif line.startswith("**核心姿态:**"):
+                save_current_field()
                 current_field = "core_posture"
-                current_content = [line.replace("**核心姿态:**", "").strip()]
+                posture_text = line.replace("**核心姿态:**", "").strip()
+                current_content = [posture_text] if posture_text else []
             elif line.startswith("**语言风格:**"):
+                save_current_field()
                 current_field = "language_style"
-                current_content = [line.replace("**语言风格:**", "").strip()]
+                style_text = line.replace("**语言风格:**", "").strip()
+                current_content = [style_text] if style_text else []
             elif line.startswith("**linked_knowledge:**"):
+                save_current_field()
                 current_field = "linked_knowledge"
                 current_content = []
             elif line.startswith("**混合情绪指引:**"):
+                save_current_field()
                 current_field = "mixing_guidance"
-                current_content = [line.replace("**混合情绪指引:**", "").strip()]
+                mixing_text = line.replace("**混合情绪指引:**", "").strip()
+                current_content = [mixing_text] if mixing_text else []
             elif line.startswith("**行为特征:**"):
+                save_current_field()
                 current_field = "behaviors"
                 current_content = []
             elif line.startswith("- ") and current_field:
@@ -150,6 +171,9 @@ class MoodDefinition(BaseModel):
             elif line and current_field:
                 current_content.append(line)
 
+        # Save the last field
+        save_current_field()
+
         return cls(
             name=name,
             display_name=display_name,
@@ -166,6 +190,9 @@ class MoodDefinition(BaseModel):
     @staticmethod
     def _normalize_name(display_name: str) -> str:
         """Convert display name to normalized name."""
+        # Strip leading markdown headers
+        display_name = display_name.lstrip("#").strip()
+
         # Extract English name if in format: "Name (Chinese)"
         match = re.match(r"([A-Z_]+)", display_name)
         if match:

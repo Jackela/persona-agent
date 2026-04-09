@@ -48,7 +48,8 @@ class TestConfigValidator:
     def test_valid_character(self, temp_config_dir):
         """Test validating a valid character file."""
         char_file = temp_config_dir / "characters" / "test.yaml"
-        char_file.write_text("""
+        char_file.write_text(
+            """
 name: "Test Character"
 version: "1.0.0"
 relationship: "friend"
@@ -62,7 +63,8 @@ traits:
 backstory: "A test character"
 goals:
   primary: "Help users"
-""")
+"""
+        )
 
         validator = ConfigValidator(temp_config_dir)
         is_valid = validator.validate_all()
@@ -72,10 +74,12 @@ goals:
     def test_character_missing_name(self, temp_config_dir):
         """Test character validation with missing name."""
         char_file = temp_config_dir / "characters" / "invalid.yaml"
-        char_file.write_text("""
+        char_file.write_text(
+            """
 version: "1.0.0"
 relationship: "friend"
-""")
+"""
+        )
 
         validator = ConfigValidator(temp_config_dir)
         is_valid = validator.validate_all()
@@ -87,7 +91,8 @@ relationship: "friend"
     def test_valid_linguistic_style(self, temp_config_dir):
         """Test validating linguistic style."""
         style_file = temp_config_dir / "linguistic_styles" / "test.json"
-        style_file.write_text("""
+        style_file.write_text(
+            """
 {
     "nicknames_for_user": ["friend", "buddy"],
     "verbal_tics": {
@@ -102,7 +107,8 @@ relationship: "friend"
         }
     }
 }
-""")
+"""
+        )
 
         validator = ConfigValidator(temp_config_dir)
         is_valid = validator.validate_all()
@@ -114,13 +120,15 @@ relationship: "friend"
     def test_linguistic_style_missing_nicknames(self, temp_config_dir):
         """Test style validation with missing nicknames."""
         style_file = temp_config_dir / "linguistic_styles" / "test.json"
-        style_file.write_text("""
+        style_file.write_text(
+            """
 {
     "nicknames_for_user": [],
     "verbal_tics": {},
     "kaomoji_lexicon": {}
 }
-""")
+"""
+        )
 
         validator = ConfigValidator(temp_config_dir)
         is_valid = validator.validate_all()

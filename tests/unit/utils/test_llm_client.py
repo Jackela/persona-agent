@@ -63,9 +63,11 @@ class TestOpenAIClient:
 
     def test_init_without_api_key(self):
         """Test initialization without API key raises error."""
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError, match="API key required"):
-                OpenAIClient()
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            pytest.raises(ValueError, match="API key required"),
+        ):
+            OpenAIClient()
 
     def test_init_with_env_key(self, mock_env_key):
         """Test initialization with environment API key."""
@@ -204,9 +206,11 @@ class TestAnthropicClient:
 
     def test_init_without_api_key(self):
         """Test initialization without API key raises error."""
-        with patch.dict(os.environ, {}, clear=True):
-            with pytest.raises(ValueError, match="API key required"):
-                AnthropicClient()
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            pytest.raises(ValueError, match="API key required"),
+        ):
+            AnthropicClient()
 
     def test_init_with_env_key(self, mock_env_key):
         """Test initialization with environment API key."""
@@ -343,9 +347,11 @@ class TestLLMClient:
 
     def test_init_local(self, mock_env_keys):
         """Test initialization with local provider."""
-        with patch("persona_agent.utils.llm_client.OpenAIClient") as mock_openai:
-            with patch.dict(os.environ, {"LOCAL_LLM_URL": "http://localhost:8080/v1"}):
-                LLMClient(provider="local")
+        with (
+            patch("persona_agent.utils.llm_client.OpenAIClient") as mock_openai,
+            patch.dict(os.environ, {"LOCAL_LLM_URL": "http://localhost:8080/v1"}),
+        ):
+            LLMClient(provider="local")
 
             mock_openai.assert_called_once()
             call_args = mock_openai.call_args
@@ -355,9 +361,11 @@ class TestLLMClient:
 
     def test_init_local_default_url(self, mock_env_keys):
         """Test local provider with default URL."""
-        with patch("persona_agent.utils.llm_client.OpenAIClient") as mock_openai:
-            with patch.dict(os.environ, {}, clear=True):
-                LLMClient(provider="local")
+        with (
+            patch("persona_agent.utils.llm_client.OpenAIClient") as mock_openai,
+            patch.dict(os.environ, {}, clear=True),
+        ):
+            LLMClient(provider="local")
 
             call_args = mock_openai.call_args
             assert call_args.kwargs.get("base_url") == "http://localhost:8000/v1"

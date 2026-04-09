@@ -91,9 +91,9 @@ class TestAgentEngine:
     def test_initialization_generates_session_id(self):
         """Test that session ID is auto-generated if not provided."""
         with (
-            patch("persona_agent.core.agent_engine.PersonaManager") as mock_pm,
-            patch("persona_agent.core.agent_engine.MemoryStore") as mock_ms,
-            patch("persona_agent.core.agent_engine.get_registry") as mock_reg,
+            patch("persona_agent.core.agent_engine.PersonaManager"),
+            patch("persona_agent.core.agent_engine.MemoryStore"),
+            patch("persona_agent.core.agent_engine.get_registry"),
             patch("persona_agent.core.agent_engine.get_mcp_client"),
         ):
             engine = AgentEngine()
@@ -211,9 +211,9 @@ class TestAgentEngineIntegration:
     async def test_full_conversation_flow(self):
         """Test a complete conversation flow."""
         with (
-            patch("persona_agent.core.agent_engine.PersonaManager") as mock_pm,
-            patch("persona_agent.core.agent_engine.MemoryStore") as mock_ms,
-            patch("persona_agent.core.agent_engine.get_registry") as mock_reg,
+            patch("persona_agent.core.agent_engine.PersonaManager"),
+            patch("persona_agent.core.agent_engine.MemoryStore"),
+            patch("persona_agent.core.agent_engine.get_registry"),
             patch("persona_agent.core.agent_engine.get_mcp_client"),
         ):
             # Setup mocks

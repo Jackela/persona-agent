@@ -248,16 +248,20 @@ class TestConfigLoaderFindConfigDir:
         user_config = tmp_path / ".config" / "persona-agent"
         user_config.mkdir(parents=True)
 
-        with patch.object(Path, "cwd", return_value=tmp_path / "nowhere"):
-            with patch.object(Path, "home", return_value=tmp_path):
-                loader = ConfigLoader()
-                assert loader.config_dir == user_config
+        with (
+            patch.object(Path, "cwd", return_value=tmp_path / "nowhere"),
+            patch.object(Path, "home", return_value=tmp_path),
+        ):
+            loader = ConfigLoader()
+            assert loader.config_dir == user_config
 
     def test_create_user_config(self, tmp_path):
         """Test creating user config if neither exists."""
         user_config = tmp_path / ".config" / "persona-agent"
 
-        with patch.object(Path, "cwd", return_value=tmp_path / "nowhere"):
-            with patch.object(Path, "home", return_value=tmp_path):
-                loader = ConfigLoader()
-                assert user_config.exists()
+        with (
+            patch.object(Path, "cwd", return_value=tmp_path / "nowhere"),
+            patch.object(Path, "home", return_value=tmp_path),
+        ):
+            _ = ConfigLoader()
+            assert user_config.exists()

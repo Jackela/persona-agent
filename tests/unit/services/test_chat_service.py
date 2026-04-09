@@ -779,7 +779,7 @@ class TestChatService:
             patch("persona_agent.services.chat_service.SessionRepository") as mock_repo,
             patch("persona_agent.services.chat_service.LLMClient") as mock_llm,
         ):
-            service = ChatService()
+            _ = ChatService()
 
             mock_char_service.assert_called_once()
             mock_repo.assert_called_once_with("memory/persona_agent.db")
@@ -791,9 +791,9 @@ class TestChatService:
     def test_init_with_custom_llm_settings(self):
         """Test initialization with custom LLM provider and model."""
         with (
-            patch("persona_agent.services.chat_service.CharacterService") as mock_char_service,
-            patch("persona_agent.services.chat_service.SessionService") as mock_sess_service,
-            patch("persona_agent.services.chat_service.SessionRepository") as mock_repo,
+            patch("persona_agent.services.chat_service.CharacterService"),
+            patch("persona_agent.services.chat_service.SessionService"),
+            patch("persona_agent.services.chat_service.SessionRepository"),
             patch("persona_agent.services.chat_service.LLMClient") as mock_llm,
         ):
             service = ChatService(

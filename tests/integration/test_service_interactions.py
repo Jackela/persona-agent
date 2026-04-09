@@ -52,7 +52,7 @@ class TestCharacterServiceWithChatService:
         """Test that changes in CharacterService are reflected in ChatService."""
         import yaml
 
-        char_service1 = CharacterService(config_dir=temp_config_dir)
+        _ = CharacterService(config_dir=temp_config_dir)
 
         new_char_path = temp_config_dir / "characters" / "dynamic.yaml"
         new_char_data = {

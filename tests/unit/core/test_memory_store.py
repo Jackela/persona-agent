@@ -93,13 +93,13 @@ class TestMemoryStore:
 
     def test_initialization_creates_db(self, temp_db):
         """Test that initialization creates the database."""
-        store = MemoryStore(db_path=temp_db)
+        _ = MemoryStore(db_path=temp_db)
 
         assert temp_db.exists()
 
     def test_initialization_creates_tables(self, temp_db):
         """Test that initialization creates required tables."""
-        store = MemoryStore(db_path=temp_db)
+        _ = MemoryStore(db_path=temp_db)
 
         # Check that tables exist by querying them
         import sqlite3

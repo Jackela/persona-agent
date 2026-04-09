@@ -13,7 +13,6 @@ from typing import Any
 
 try:
     import chromadb
-    from chromadb.config import Settings
 
     CHROMA_AVAILABLE = True
 except ImportError:
@@ -22,26 +21,6 @@ except ImportError:
 from persona_agent.core.memory_store import MemoryStore as SQLiteMemoryStore
 
 logger = logging.getLogger(__name__)
-
-
-def _create_chroma_client(chroma_path: Path):
-    """Create ChromaDB client with version-aware API.
-
-    Handles differences between ChromaDB 0.3.x and 0.4.x+ APIs.
-    """
-    chroma_version = tuple(map(int, chromadb.__version__.split(".")[:2]))
-
-    if chroma_version >= (0, 4):
-        # ChromaDB 0.4+ uses PersistentClient
-        return chromadb.PersistentClient(path=str(chroma_path))
-    else:
-        # ChromaDB 0.3.x uses Client with Settings
-        return chromadb.Client(
-            Settings(
-                chroma_db_impl="duckdb+parquet",
-                persist_directory=str(chroma_path),
-            )
-        )
 
 
 class VectorMemoryStore:
@@ -67,7 +46,7 @@ class VectorMemoryStore:
         self.chroma_path.parent.mkdir(parents=True, exist_ok=True)
 
         if CHROMA_AVAILABLE:
-            self.chroma_client = _create_chroma_client(self.chroma_path)
+            self.chroma_client = chromadb.PersistentClient(path=str(self.chroma_path))
             self.collection = self.chroma_client.get_or_create_collection(
                 name="conversations",
                 metadata={"hnsw:space": "cosine"},
@@ -218,9 +197,5 @@ class VectorMemoryStore:
 
     def close(self) -> None:
         """Close all connections."""
-        if self.chroma_client:
-            # ChromaDB 0.4+ persists automatically; 0.3.x requires explicit persist
-            chroma_version = tuple(map(int, chromadb.__version__.split(".")[:2]))
-            if chroma_version < (0, 4) and hasattr(self.chroma_client, "persist"):
-                self.chroma_client.persist()
+        # PersistentClient auto-persists, only close SQLite
         self.sqlite_store.close()

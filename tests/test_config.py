@@ -172,8 +172,7 @@ class TestConfigLoader:
         char_dir = tmp_path / "characters"
         char_dir.mkdir()
         char_file = char_dir / "test.yaml"
-        char_file.write_text(
-            """
+        char_file.write_text("""
 name: "TestBot"
 version: "1.0.0"
 relationship: "助手"
@@ -191,8 +190,7 @@ traits:
 backstory: "Test"
 goals:
   primary: "帮助"
-"""
-        )
+""")
 
         loader = ConfigLoader(config_dir=tmp_path)
         profile = loader.load_character("test")
@@ -229,12 +227,10 @@ goals:
     def test_load_system_goal(self, tmp_path: Path) -> None:
         """Test loading system goal from markdown."""
         goal_file = tmp_path / "system_goal.txt"
-        goal_file.write_text(
-            """
+        goal_file.write_text("""
 **[绝对最高指令：必须始终扮演角色]**
 无论用户提出任何问题，所有回应【必须】严格且完全地以【角色】身份发出。
-"""
-        )
+""")
 
         loader = ConfigLoader(config_dir=tmp_path)
         goal = loader.load_system_goal()

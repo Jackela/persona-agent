@@ -13,7 +13,6 @@ from typing import Any
 
 try:
     import chromadb
-    from chromadb.config import Settings
 
     CHROMA_AVAILABLE = True
 except ImportError:
@@ -22,6 +21,34 @@ except ImportError:
 from persona_agent.core.memory_store import MemoryStore as SQLiteMemoryStore
 
 logger = logging.getLogger(__name__)
+
+
+def _create_chroma_client(chroma_path: Path) -> Any:
+    """Create appropriate ChromaDB client based on version.
+
+    Args:
+        chroma_path: Path to ChromaDB persistence directory
+
+    Returns:
+        ChromaDB client instance or None if ChromaDB not available
+    """
+    if not CHROMA_AVAILABLE:
+        return None
+
+    version = getattr(chromadb, "__version__", "0.4.0")
+    try:
+        major, minor = map(int, version.split(".")[:2])
+    except (ValueError, AttributeError):
+        major, minor = 0, 4  # Default to 0.4+ behavior
+
+    if major >= 1 or (major == 0 and minor >= 4):
+        # ChromaDB 0.4+ and 1.0+ uses PersistentClient
+        return chromadb.PersistentClient(path=str(chroma_path))
+    else:
+        # ChromaDB 0.3.x uses Client with Settings
+        from chromadb.config import Settings
+
+        return chromadb.Client(Settings(persist_directory=str(chroma_path)))
 
 
 class VectorMemoryStore:
@@ -46,13 +73,28 @@ class VectorMemoryStore:
         self.chroma_path = Path(chroma_path)
         self.chroma_path.parent.mkdir(parents=True, exist_ok=True)
 
+        self._chroma_version = (0, 4)  # Default to 0.4+
         if CHROMA_AVAILABLE:
-            self.chroma_client = chromadb.Client(
-                Settings(
-                    chroma_db_impl="duckdb+parquet",
-                    persist_directory=str(self.chroma_path),
+            version_str = getattr(chromadb, "__version__", "0.4.0")
+            try:
+                major, minor = map(int, version_str.split(".")[:2])
+                self._chroma_version = (major, minor)
+            except (ValueError, AttributeError):
+                pass
+
+            if self._chroma_version[0] >= 1 or (
+                self._chroma_version[0] == 0 and self._chroma_version[1] >= 4
+            ):
+                # ChromaDB 0.4+ uses PersistentClient
+                self.chroma_client = chromadb.PersistentClient(path=str(self.chroma_path))
+            else:
+                # ChromaDB 0.3.x uses Client with Settings
+                from chromadb.config import Settings
+
+                self.chroma_client = chromadb.Client(
+                    Settings(persist_directory=str(self.chroma_path))
                 )
-            )
+
             self.collection = self.chroma_client.get_or_create_collection(
                 name="conversations",
                 metadata={"hnsw:space": "cosine"},
@@ -203,6 +245,10 @@ class VectorMemoryStore:
 
     def close(self) -> None:
         """Close all connections."""
-        if self.chroma_client:
-            self.chroma_client.persist()
+        # For ChromaDB 0.3.x, we need to manually persist
+        if self.chroma_client and hasattr(self, "_chroma_version"):
+            if self._chroma_version[0] == 0 and self._chroma_version[1] < 4:
+                if hasattr(self.chroma_client, "persist"):
+                    self.chroma_client.persist()
+        # Close SQLite
         self.sqlite_store.close()

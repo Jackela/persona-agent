@@ -1,30 +1,32 @@
-"""CLI interface for persona-agent."""
+"""CLI interface for persona-agent using Service Layer architecture."""
 
 import asyncio
-import sqlite3
+import logging
 import sys
-from datetime import datetime
-from pathlib import Path
 
 import click
 from rich.console import Console
 from rich.panel import Panel
 
-# Add src to path for development
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-from persona_agent.config.loader import ConfigLoader
-from persona_agent.core.agent_engine import AgentEngine
-from persona_agent.core.memory_store import MemoryStore
-from persona_agent.core.persona_manager import PersonaManager
-from persona_agent.utils.llm_client import LLMClient
+from persona_agent.services import (
+    CharacterNotFoundError,
+    CharacterService,
+    ChatPersonaNotFoundError,
+    ChatService,
+    ChatServiceError,
+    ChatSessionNotFoundError,
+    SessionService,
+)
+from persona_agent.ui.formatters import OutputFormatter
+from persona_agent.utils.exceptions import PersonaAgentError
 
 console = Console()
+logger = logging.getLogger(__name__)
 
 
 @click.group()
 @click.version_option(version="0.1.0")
-def cli():
+def cli() -> None:
     """Persona-Agent: A local role-playing AI agent."""
     pass
 
@@ -38,7 +40,8 @@ def cli():
 @click.option(
     "--provider",
     default="openai",
-    help="LLM provider (openai, anthropic, local)",
+    type=click.Choice(["openai", "anthropic", "local"]),
+    help="LLM provider",
 )
 @click.option(
     "--model",
@@ -49,7 +52,7 @@ def cli():
     "-s",
     help="Session ID to resume",
 )
-def chat(persona: str | None, provider: str, model: str | None, session: str | None):
+def chat(persona: str | None, provider: str, model: str | None, session: str | None) -> None:
     """Start an interactive chat session."""
     asyncio.run(_chat_async(persona, provider, model, session))
 
@@ -59,116 +62,164 @@ async def _chat_async(
     provider: str,
     model: str | None,
     session: str | None,
-):
-    """Async chat implementation."""
-    # Initialize components
-    config_loader = ConfigLoader()
+) -> None:
+    """Async chat implementation using ChatService."""
+    formatter = OutputFormatter(console)
 
-    # Load character
-    if not persona:
-        available = config_loader.list_characters()
-        if available:
-            persona = available[0]
-        else:
-            console.print("[red]No characters found. Please create one first.[/red]")
-            return
-
-    try:
-        persona_manager = PersonaManager(config_loader, persona)
-    except FileNotFoundError:
-        console.print(f"[red]Character '{persona}' not found.[/red]")
-        return
-
-    # Initialize LLM client
-    try:
-        llm_client = LLMClient(provider=provider, model=model)
-    except ValueError as e:
-        console.print(f"[red]Failed to initialize LLM client: {e}[/red]")
-        return
-
-    # Initialize memory
-    memory_store = MemoryStore()
-
-    # Create agent engine
-    agent = AgentEngine(
-        persona_manager=persona_manager,
-        memory_store=memory_store,
-        llm_client=llm_client,
-        session_id=session,
-    )
-
-    # Display welcome
-    char = persona_manager.get_character()
-    if char:
-        console.print(
-            Panel.fit(
-                f"[bold]{char.name}[/bold]\n{char.relationship or 'Your companion'}",
-                title="Persona-Agent",
-                border_style="blue",
-            )
-        )
-
-    console.print("\n[dim]Type 'exit' or press Ctrl+C to quit.[/dim]\n")
-
-    # Chat loop
-    while True:
+    async with ChatService(llm_provider=provider, llm_model=model) as chat_service:
         try:
-            user_input = console.input("[bold cyan]You:[/bold cyan] ").strip()
+            # Get or create session
+            if session:
+                # Resume existing session
+                try:
+                    session_info = await chat_service.get_session_info(session)
+                    current_session_id = session
+                    # Use session's persona if none specified
+                    if not persona:
+                        persona = session_info.get("persona_name")
+                except ChatSessionNotFoundError:
+                    formatter.print_error(f"Session '{session}' not found.")
+                    return
+                except ChatServiceError as e:
+                    logger.error(f"Failed to get session info: {e}")
+                    formatter.print_error(f"Failed to retrieve session: {e}")
+                    return
+            else:
+                # Create new session
+                try:
+                    current_session_id = await chat_service.create_new_session(persona_name=persona)
+                except ChatPersonaNotFoundError:
+                    formatter.print_error(f"Persona '{persona}' not found.")
+                    return
+                except ChatServiceError as e:
+                    logger.error(f"Failed to create session: {e}")
+                    formatter.print_error(f"Failed to create session: {e}")
+                    return
 
-            if not user_input:
-                continue
+            # Validate we have a persona
+            if not persona:
+                # Try to get default from character service
+                character_service = CharacterService()
+                available = character_service.list_characters()
+                if available:
+                    persona = available[0]
+                else:
+                    formatter.print_error("No characters found. Please create one first.")
+                    return
 
-            if user_input.lower() in ["exit", "quit", "bye"]:
-                console.print("\n[dim]Goodbye![/dim]")
-                break
+            # Get character info for display
+            character_service = CharacterService()
+            try:
+                char = character_service.get_character(persona)
+            except CharacterNotFoundError:
+                formatter.print_error(f"Character '{persona}' not found.")
+                return
+            except Exception as e:
+                logger.error(f"Failed to load character '{persona}': {e}")
+                formatter.print_error(f"Failed to load character: {e}")
+                return
 
-            # Generate response
-            with console.status("[dim]Thinking...[/dim]", spinner="dots"):
-                response = await agent.chat(user_input)
+            # Display welcome
+            console.print(
+                Panel.fit(
+                    f"[bold]{char.name}[/bold]\n{char.relationship or 'Your companion'}",
+                    title="Persona-Agent",
+                    border_style="blue",
+                )
+            )
 
-            # Display response
-            char_name = char.name if char else "Assistant"
-            console.print(f"[bold magenta]{char_name}:[/bold magenta] ", end="")
-            console.print(response)
-            console.print()
+            formatter.print_dim("\nType 'exit' or press Ctrl+C to quit.\n")
 
-        except KeyboardInterrupt:
-            console.print("\n\n[dim]Goodbye![/dim]")
-            break
+            # Chat loop
+            while True:
+                try:
+                    user_input = console.input("[bold cyan]You:[/bold cyan] ").strip()
+
+                    if not user_input:
+                        continue
+
+                    if user_input.lower() in ["exit", "quit", "bye"]:
+                        formatter.print_dim("\nGoodbye!")
+                        break
+
+                    # Send message and get response
+                    with console.status("[dim]Thinking...[/dim]", spinner="dots"):
+                        response = await chat_service.send_message(
+                            session_id=current_session_id,
+                            message=user_input,
+                        )
+
+                    # Display response
+                    console.print(f"[bold magenta]{char.name}:[/bold magenta] ", end="")
+                    console.print(response)
+                    console.print()
+
+                except KeyboardInterrupt:
+                    formatter.print_dim("\n\nGoodbye!")
+                    break
+                except PersonaAgentError as e:
+                    logger.error(f"Chat error: {e}")
+                    formatter.print_error(f"\n{e.message}\n")
+                except Exception as e:
+                    logger.exception(f"Unexpected error in chat loop: {e}")
+                    formatter.print_error("\nAn unexpected error occurred. Please try again.\n")
+
+        except ChatSessionNotFoundError:
+            formatter.print_error("Session not found.")
+        except ChatPersonaNotFoundError:
+            formatter.print_error("Persona not found.")
+        except ChatServiceError as e:
+            logger.error(f"Chat service error: {e}")
+            formatter.print_error(f"Chat service error: {e}")
         except Exception as e:
-            console.print(f"\n[red]Error: {e}[/red]\n")
+            logger.exception(f"Unexpected chat error: {e}")
+            formatter.print_error(f"An unexpected error occurred: {e}")
 
 
 @cli.group()
-def config():
+def config() -> None:
     """Manage configuration."""
     pass
 
 
 @config.command("list")
-def list_characters():
-    """List available characters."""
-    loader = ConfigLoader()
-    characters = loader.list_characters()
+def list_characters() -> None:
+    """List available characters using CharacterService."""
+    formatter = OutputFormatter(console)
 
-    if not characters:
-        console.print("[yellow]No characters found.[/yellow]")
-        return
+    try:
+        character_service = CharacterService()
+        characters = character_service.list_characters()
 
-    console.print("\n[bold]Available Characters:[/bold]")
-    for char in characters:
-        console.print(f"  • {char}")
-    console.print()
+        if not characters:
+            formatter.print_warning("No characters found.")
+            return
+
+        formatter.print_table(
+            headers=["Character"],
+            rows=[[char] for char in characters],
+            title="Available Characters",
+        )
+    except Exception as e:
+        logger.error(f"Error listing characters: {e}")
+        formatter.print_error(f"Error listing characters: {e}")
 
 
 @config.command("show")
 @click.argument("character")
-def show_character(character: str):
-    """Show character details."""
-    loader = ConfigLoader()
+def show_character(character: str) -> None:
+    """Show character details using CharacterService."""
+    formatter = OutputFormatter(console)
 
     try:
-        profile = loader.load_character(character)
+        character_service = CharacterService()
+
+        # Validate character exists
+        if not character_service.character_exists(character):
+            formatter.print_error(f"Character '{character}' not found.")
+            return
+
+        profile = character_service.get_character(character)
         console.print(
             Panel.fit(
                 profile.to_prompt_context(),
@@ -176,12 +227,13 @@ def show_character(character: str):
                 border_style="green",
             )
         )
-    except FileNotFoundError:
-        console.print(f"[red]Character '{character}' not found.[/red]")
+    except Exception as e:
+        logger.error(f"Error loading character '{character}': {e}")
+        formatter.print_error(f"Error loading character: {e}")
 
 
 @cli.group()
-def session():
+def session() -> None:
     """Manage chat sessions."""
     pass
 
@@ -191,160 +243,114 @@ def session():
     "--limit",
     "-l",
     default=20,
+    type=int,
     help="Maximum number of sessions to show",
 )
-def list_sessions(limit: int):
-    """List recent chat sessions."""
-    from pathlib import Path
+def list_sessions(limit: int) -> None:
+    """List recent chat sessions using SessionService."""
+    formatter = OutputFormatter(console)
 
-    db_path = Path("memory/persona_agent.db")
-    if not db_path.exists():
-        console.print("[yellow]No memory database found.[/yellow]")
-        return
+    async def _list() -> None:
+        try:
+            async with SessionService() as service:
+                sessions = await service.list_sessions(limit=limit)
 
-    try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.execute(
-            """
-            SELECT session_id, COUNT(*) as message_count,
-                   MAX(timestamp) as last_activity
-            FROM conversations
-            GROUP BY session_id
-            ORDER BY last_activity DESC
-            LIMIT ?
-            """,
-            (limit,),
-        )
-        sessions = cursor.fetchall()
-        conn.close()
+                if not sessions:
+                    formatter.print_warning("No sessions found.")
+                    return
 
-        if not sessions:
-            console.print("[yellow]No sessions found.[/yellow]")
-            return
+                # Format for table display
+                rows = []
+                for s in sessions:
+                    last_str = (
+                        s["last_activity"].strftime("%Y-%m-%d %H:%M")
+                        if hasattr(s["last_activity"], "strftime")
+                        else str(s["last_activity"])
+                    )
+                    rows.append([s["session_id"], str(s["message_count"]), last_str])
 
-        console.print(f"\n[bold]Recent Sessions (last {len(sessions)}):[/bold]\n")
+                formatter.print_table(
+                    headers=["Session ID", "Messages", "Last Activity"],
+                    rows=rows,
+                    title=f"Recent Sessions (last {len(sessions)})",
+                )
+        except Exception as e:
+            logger.error(f"Error reading sessions: {e}")
+            formatter.print_error(f"Error reading sessions: {e}")
 
-        for session_id, count, last_time in sessions:
-            last_str = datetime.fromtimestamp(last_time).strftime("%Y-%m-%d %H:%M")
-            console.print(f"  [cyan]{session_id}[/cyan] - {count} messages (last: {last_str})")
-
-        console.print()
-
-    except Exception as e:
-        console.print(f"[red]Error reading sessions: {e}[/red]")
+    asyncio.run(_list())
 
 
 @session.command("info")
 @click.argument("session_id")
-def session_info(session_id: str):
-    """Show detailed information about a session."""
-    from pathlib import Path
+def session_info(session_id: str) -> None:
+    """Show detailed information about a session using SessionService."""
+    formatter = OutputFormatter(console)
 
-    db_path = Path("memory/persona_agent.db")
-    if not db_path.exists():
-        console.print("[yellow]No memory database found.[/yellow]")
-        return
+    async def _info() -> None:
+        try:
+            async with SessionService() as service:
+                if not await service.session_exists(session_id):
+                    formatter.print_warning(f"Session '{session_id}' not found.")
+                    return
 
-    try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
+                info = await service.get_session_info(session_id)
 
-        # Get message count
-        cursor = conn.execute(
-            "SELECT COUNT(*) as count FROM conversations WHERE session_id = ?",
-            (session_id,),
-        )
-        count = cursor.fetchone()["count"]
+                # Display session info
+                console.print(f"\n[bold]Session:[/bold] [cyan]{session_id}[/cyan]\n")
+                console.print(f"  Total messages: {info['message_count']}")
 
-        if count == 0:
-            console.print(f"[yellow]Session '{session_id}' not found.[/yellow]")
-            conn.close()
-            return
+                if hasattr(info["first_activity"], "strftime"):
+                    first_str = info["first_activity"].strftime("%Y-%m-%d %H:%M:%S")
+                    last_str = info["last_activity"].strftime("%Y-%m-%d %H:%M:%S")
+                else:
+                    first_str = str(info["first_activity"])
+                    last_str = str(info["last_activity"])
 
-        # Get first and last message times
-        cursor = conn.execute(
-            """
-            SELECT MIN(timestamp) as first_time, MAX(timestamp) as last_time
-            FROM conversations WHERE session_id = ?
-            """,
-            (session_id,),
-        )
-        times = cursor.fetchone()
+                console.print(f"  Started: {first_str}")
+                console.print(f"  Last activity: {last_str}")
 
-        # Get recent messages
-        cursor = conn.execute(
-            """
-            SELECT user_message, assistant_message, timestamp
-            FROM conversations WHERE session_id = ?
-            ORDER BY timestamp DESC LIMIT 5
-            """,
-            (session_id,),
-        )
-        recent = cursor.fetchall()
+                # Display recent messages
+                recent = info.get("recent_messages", [])
+                if recent:
+                    console.print("\n[bold]Recent messages:[/bold]\n")
+                    for msg in recent:
+                        if isinstance(msg, dict):
+                            time_str = msg.get("timestamp", "")
+                            if hasattr(time_str, "strftime"):
+                                time_str = time_str.strftime("%H:%M:%S")
+                            user_msg = msg.get("user_message", "")[:50]
+                            console.print(f"  [dim]{time_str}[/dim] You: {user_msg}...")
 
-        conn.close()
+                console.print()
+        except Exception as e:
+            logger.error(f"Error reading session info: {e}")
+            formatter.print_error(f"Error reading session info: {e}")
 
-        # Display info
-        console.print(f"\n[bold]Session:[/bold] [cyan]{session_id}[/cyan]\n")
-        console.print(f"  Total messages: {count}")
-        console.print(
-            f"  Started: {datetime.fromtimestamp(times['first_time']).strftime('%Y-%m-%d %H:%M:%S')}"
-        )
-        console.print(
-            f"  Last activity: {datetime.fromtimestamp(times['last_time']).strftime('%Y-%m-%d %H:%M:%S')}"
-        )
-
-        console.print("\n[bold]Recent messages:[/bold]\n")
-        for row in reversed(recent):
-            time_str = datetime.fromtimestamp(row["timestamp"]).strftime("%H:%M:%S")
-            console.print(f"  [dim]{time_str}[/dim] You: {row['user_message'][:50]}...")
-
-        console.print()
-
-    except Exception as e:
-        console.print(f"[red]Error reading session info: {e}[/red]")
+    asyncio.run(_info())
 
 
 @session.command("delete")
 @click.argument("session_id")
 @click.confirmation_option(prompt="Are you sure you want to delete this session?")
-def delete_session(session_id: str):
-    """Delete a session and all its messages."""
-    from pathlib import Path
+def delete_session(session_id: str) -> None:
+    """Delete a session and all its messages using SessionService."""
+    formatter = OutputFormatter(console)
 
-    db_path = Path("memory/persona_agent.db")
-    if not db_path.exists():
-        console.print("[yellow]No memory database found.[/yellow]")
-        return
+    async def _delete() -> None:
+        try:
+            async with SessionService() as service:
+                if not await service.session_exists(session_id):
+                    formatter.print_warning(f"Session '{session_id}' not found.")
+                    return
 
-    try:
-        conn = sqlite3.connect(db_path)
+                await service.delete_session(session_id)
+                formatter.print_success(f"Deleted session '{session_id}'.")
+        except Exception as e:
+            logger.error(f"Error deleting session: {e}")
+            formatter.print_error(f"Error deleting session: {e}")
 
-        # Delete conversations
-        cursor = conn.execute(
-            "DELETE FROM conversations WHERE session_id = ?",
-            (session_id,),
-        )
-        deleted = cursor.rowcount
-
-        # Delete summaries
-        conn.execute(
-            "DELETE FROM memory_summaries WHERE session_id = ?",
-            (session_id,),
-        )
-
-        conn.commit()
-        conn.close()
-
-        if deleted > 0:
-            console.print(
-                f"[green]Deleted session '{session_id}' ({deleted} messages removed).[/green]"
-            )
-        else:
-            console.print(f"[yellow]Session '{session_id}' not found.[/yellow]")
-
-    except Exception as e:
-        console.print(f"[red]Error deleting session: {e}[/red]")
+    asyncio.run(_delete())
 
 
 @config.command("validate")
@@ -354,7 +360,7 @@ def delete_session(session_id: str):
     default="config",
     help="Configuration directory to validate",
 )
-def validate_config_cmd(dir: str):
+def validate_config_cmd(dir: str) -> None:
     """Validate configuration files."""
     from persona_agent.config.validator import ConfigValidator
 
@@ -366,7 +372,7 @@ def validate_config_cmd(dir: str):
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     cli()
 

@@ -71,7 +71,33 @@ class ConfigValidator:
                     self.warnings.append(f"Character {char_file.stem}: missing relationship")
 
             except Exception as e:
-                self.errors.append(f"Character {char_file.stem}: {e}")
+                error_msg = str(e)
+                if "name" in error_msg.lower() and (
+                    "required" in error_msg.lower() or "missing" in error_msg.lower()
+                ):
+                    self.errors.append(f"Character {char_file.stem}: missing name")
+                else:
+                    self.errors.append(f"Character {char_file.stem}: {e}")
+
+        # Also check .yml files
+        for char_file in chars_dir.glob("*.yml"):
+            try:
+                profile = CharacterProfile.from_yaml(char_file)
+
+                if not profile.name:
+                    self.errors.append(f"Character {char_file.stem}: missing name")
+
+                if not profile.relationship:
+                    self.warnings.append(f"Character {char_file.stem}: missing relationship")
+
+            except Exception as e:
+                error_msg = str(e)
+                if "name" in error_msg.lower() and (
+                    "required" in error_msg.lower() or "missing" in error_msg.lower()
+                ):
+                    self.errors.append(f"Character {char_file.stem}: missing name")
+                else:
+                    self.errors.append(f"Character {char_file.stem}: {e}")
 
     def _validate_mood_states(self) -> None:
         """Validate mood state configurations."""

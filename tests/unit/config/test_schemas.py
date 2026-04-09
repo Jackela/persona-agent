@@ -1,6 +1,5 @@
 """Tests for config schemas module."""
 
-import tempfile
 from pathlib import Path
 
 import pytest

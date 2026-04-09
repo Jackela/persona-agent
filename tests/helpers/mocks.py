@@ -3,14 +3,14 @@
 Mock implementations for external dependencies.
 """
 
-from typing import Any, Optional
+from typing import Any
 from unittest.mock import MagicMock
 
 
 class MockLLMClient:
     """Mock LLM client for testing."""
 
-    def __init__(self, responses: Optional[list[str]] = None):
+    def __init__(self, responses: list[str] | None = None):
         """Initialize mock client.
 
         Args:
@@ -18,7 +18,7 @@ class MockLLMClient:
         """
         self.responses = responses or ["This is a mock response."]
         self.call_count = 0
-        self.last_prompt: Optional[str] = None
+        self.last_prompt: str | None = None
         self.history: list[dict[str, Any]] = []
 
     async def chat(self, prompt: str, **kwargs: Any) -> str:
@@ -83,7 +83,7 @@ class MockMemoryStore:
         """Mock search memories."""
         return self.search_results
 
-    async def get(self, user_id: str, memory_id: str) -> Optional[dict[str, Any]]:
+    async def get(self, user_id: str, memory_id: str) -> dict[str, Any] | None:
         """Mock get memory by ID."""
         for memory in self.memories.get(user_id, []):
             if memory["id"] == memory_id:
@@ -108,7 +108,7 @@ class MockSkill:
         self.name = name
         self.enabled = enabled
         self.call_count = 0
-        self.last_args: Optional[dict[str, Any]] = None
+        self.last_args: dict[str, Any] | None = None
         self.return_value: Any = {"status": "success", "result": "Mock skill result"}
 
     async def execute(self, **kwargs: Any) -> Any:

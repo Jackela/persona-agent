@@ -4,16 +4,16 @@ Tests complete chat session flows including session creation, messaging,
 persona switching, session persistence, and error recovery.
 """
 
-import pytest
 from datetime import datetime
 from unittest.mock import Mock
 
-from persona_agent.repositories.models import Session
+import pytest
+
 from persona_agent.services.chat_service import (
+    ChatMessageError,
+    ChatPersonaNotFoundError,
     ChatService,
     ChatSessionNotFoundError,
-    ChatPersonaNotFoundError,
-    ChatMessageError,
 )
 from persona_agent.services.session_service import SessionService
 from persona_agent.utils.llm_client import LLMResponse
@@ -181,7 +181,6 @@ class TestSessionPersistenceFlow:
         """Test that session data persists after service is closed and reopened."""
         from persona_agent.repositories import SessionRepository
         from persona_agent.services.character_service import CharacterService
-        from persona_agent.services.session_service import SessionService
 
         db_path = temp_config_dir / "persistent_test.db"
 

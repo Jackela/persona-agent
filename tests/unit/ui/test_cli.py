@@ -1,17 +1,16 @@
 """Unit tests for CLI interface."""
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from datetime import datetime
-from unittest.mock import Mock, AsyncMock, patch
 from click.testing import CliRunner
 
-from persona_agent.ui.cli import cli
-from persona_agent.config.schemas.character import CharacterProfile
 from persona_agent.services import (
-    ChatSessionNotFoundError,
     ChatPersonaNotFoundError,
     ChatServiceError,
+    ChatSessionNotFoundError,
 )
+from persona_agent.ui.cli import cli
 
 
 @pytest.fixture

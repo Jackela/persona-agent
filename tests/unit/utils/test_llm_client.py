@@ -1,10 +1,8 @@
 """Tests for llm_client module with mocked HTTP requests."""
 
-import json
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 
 from persona_agent.utils.llm_client import (
@@ -157,14 +155,24 @@ class TestOpenAIClient:
     async def test_chat_stream(self, mock_env_key, mock_httpx_client):
         """Test streaming chat completion."""
         # Setup mock stream response
-        mock_response = AsyncMock()
-        mock_response.aiter_lines.return_value = [
-            'data: {"choices": [{"delta": {"content": "Hello"}}]}',
-            'data: {"choices": [{"delta": {"content": " world"}}]}',
-            "data: [DONE]",
-        ]
-        mock_httpx_client.stream.return_value.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_httpx_client.stream.return_value.__aexit__ = AsyncMock(return_value=False)
+        mock_response = MagicMock()
+
+        async def async_lines():
+            lines = [
+                'data: {"choices": [{"delta": {"content": "Hello"}}]}',
+                'data: {"choices": [{"delta": {"content": " world"}}]}',
+                "data: [DONE]",
+            ]
+            for line in lines:
+                yield line
+
+        mock_response.aiter_lines = async_lines
+
+        # Configure stream method to return an async context manager mock
+        stream_mock = MagicMock()
+        stream_mock.__aenter__ = AsyncMock(return_value=mock_response)
+        stream_mock.__aexit__ = AsyncMock(return_value=False)
+        mock_httpx_client.stream = MagicMock(return_value=stream_mock)
 
         client = OpenAIClient()
         client.client = mock_httpx_client
@@ -273,13 +281,23 @@ class TestAnthropicClient:
     @pytest.mark.asyncio
     async def test_chat_stream(self, mock_env_key, mock_httpx_client):
         """Test streaming chat completion."""
-        mock_response = AsyncMock()
-        mock_response.aiter_lines.return_value = [
-            'data: {"type": "content_block_delta", "delta": {"text": "Hello"}}',
-            'data: {"type": "content_block_delta", "delta": {"text": " Claude"}}',
-        ]
-        mock_httpx_client.stream.return_value.__aenter__ = AsyncMock(return_value=mock_response)
-        mock_httpx_client.stream.return_value.__aexit__ = AsyncMock(return_value=False)
+        mock_response = MagicMock()
+
+        async def async_lines():
+            lines = [
+                'data: {"type": "content_block_delta", "delta": {"text": "Hello"}}',
+                'data: {"type": "content_block_delta", "delta": {"text": " Claude"}}',
+            ]
+            for line in lines:
+                yield line
+
+        mock_response.aiter_lines = async_lines
+
+        # Configure stream method to return an async context manager mock
+        stream_mock = MagicMock()
+        stream_mock.__aenter__ = AsyncMock(return_value=mock_response)
+        stream_mock.__aexit__ = AsyncMock(return_value=False)
+        mock_httpx_client.stream = MagicMock(return_value=stream_mock)
 
         client = AnthropicClient()
         client.client = mock_httpx_client
@@ -311,13 +329,17 @@ class TestLLMClient:
         """Test initialization with OpenAI provider."""
         with patch("persona_agent.utils.llm_client.OpenAIClient") as mock_openai:
             LLMClient(provider="openai", model="gpt-4")
-            mock_openai.assert_called_once_with("openai-test-key")
+            # Called with None since api_key param defaults to None
+            # OpenAIClient reads from env var internally
+            mock_openai.assert_called_once_with(None)
 
     def test_init_anthropic(self, mock_env_keys):
         """Test initialization with Anthropic provider."""
         with patch("persona_agent.utils.llm_client.AnthropicClient") as mock_anthropic:
             LLMClient(provider="anthropic", model="claude-3-opus")
-            mock_anthropic.assert_called_once_with("anthropic-test-key")
+            # Called with None since api_key param defaults to None
+            # AnthropicClient reads from env var internally
+            mock_anthropic.assert_called_once_with(None)
 
     def test_init_local(self, mock_env_keys):
         """Test initialization with local provider."""
@@ -327,8 +349,9 @@ class TestLLMClient:
 
             mock_openai.assert_called_once()
             call_args = mock_openai.call_args
-            assert call_args[0][0] == "dummy"
-            assert call_args[1]["base_url"] == "http://localhost:8080/v1"
+            # Called with api_key="dummy" and base_url from env
+            assert call_args.kwargs.get("api_key") == "dummy"
+            assert call_args.kwargs.get("base_url") == "http://localhost:8080/v1"
 
     def test_init_local_default_url(self, mock_env_keys):
         """Test local provider with default URL."""
@@ -337,7 +360,7 @@ class TestLLMClient:
                 LLMClient(provider="local")
 
             call_args = mock_openai.call_args
-            assert call_args[1]["base_url"] == "http://localhost:8000/v1"
+            assert call_args.kwargs.get("base_url") == "http://localhost:8000/v1"
 
     def test_init_unknown_provider(self, mock_env_keys):
         """Test initialization with unknown provider raises error."""

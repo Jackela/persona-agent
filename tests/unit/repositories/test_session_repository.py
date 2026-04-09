@@ -1,19 +1,17 @@
 """Unit tests for SessionRepository."""
 
-import pytest
 import sqlite3
-import asyncio
 from datetime import datetime
-from pathlib import Path
-from unittest.mock import patch, MagicMock
+
+import pytest
 
 from persona_agent.repositories import Session
-from persona_agent.repositories.session_repository import SessionRepository
 from persona_agent.repositories.base import (
-    EntityNotFoundError,
     DuplicateEntityError,
+    EntityNotFoundError,
     PaginationParams,
 )
+from persona_agent.repositories.session_repository import SessionRepository
 
 
 class TestSessionRepository:

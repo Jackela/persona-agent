@@ -1,6 +1,5 @@
 """Tests for vector_memory.py with mocked ChromaDB."""
 
-import json
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -208,7 +207,8 @@ class TestVectorMemoryStore:
     async def test_close_with_chromadb_03(self, temp_dir, mock_chromadb, mock_chroma_client):
         """Test close with ChromaDB 0.3.x (manual persist)."""
         mock_chromadb.__version__ = "0.3.29"
-        mock_chromadb.PersistentClient.return_value = mock_chroma_client
+        # For 0.3.x, Client is used (not PersistentClient)
+        mock_chromadb.Client.return_value = mock_chroma_client
 
         from persona_agent.core.vector_memory import VectorMemoryStore
 

@@ -19,11 +19,9 @@ from persona_agent.services.character_service import (
     CharacterService,
 )
 from persona_agent.services.session_service import (
-    SessionNotFoundError,
     SessionService,
 )
 from persona_agent.utils.exceptions import (
-    LLMError,
     PersonaAgentError,
 )
 from persona_agent.utils.llm_client import LLMClient, LLMResponse
@@ -509,7 +507,7 @@ class ChatService:
         await self._session_repo.disconnect()
         await self._session_service.close()
 
-    async def __aenter__(self) -> "ChatService":
+    async def __aenter__(self) -> ChatService:
         """Async context manager entry.
 
         Returns:

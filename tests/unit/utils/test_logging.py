@@ -3,11 +3,7 @@
 import json
 import logging
 import sys
-import tempfile
-from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from persona_agent.utils.logging_config import (
     ColoredFormatter,
@@ -155,7 +151,14 @@ class TestSetupLogging:
         """Test basic logging setup."""
         with patch("logging.getLogger") as mock_get_logger:
             mock_root = MagicMock()
-            mock_get_logger.return_value = mock_root
+
+            # Return different mocks for root vs third-party loggers
+            def get_logger_side_effect(name=None):
+                if name is None or name == "":
+                    return mock_root
+                return MagicMock()
+
+            mock_get_logger.side_effect = get_logger_side_effect
 
             setup_logging(level="INFO")
 
@@ -167,7 +170,14 @@ class TestSetupLogging:
         """Test setup with invalid level defaults to INFO."""
         with patch("logging.getLogger") as mock_get_logger:
             mock_root = MagicMock()
-            mock_get_logger.return_value = mock_root
+
+            # Return different mocks for root vs third-party loggers
+            def get_logger_side_effect(name=None):
+                if name is None or name == "":
+                    return mock_root
+                return MagicMock()
+
+            mock_get_logger.side_effect = get_logger_side_effect
 
             setup_logging(level="INVALID")
 
@@ -175,51 +185,65 @@ class TestSetupLogging:
 
     def test_setup_logging_json_format(self):
         """Test setup with JSON formatting."""
-        with patch("logging.getLogger") as mock_get_logger:
-            with patch("persona_agent.utils.logging_config.JSONFormatter") as mock_json_formatter:
-                mock_root = MagicMock()
-                mock_get_logger.return_value = mock_root
+        with (
+            patch("logging.getLogger") as mock_get_logger,
+            patch("persona_agent.utils.logging_config.JSONFormatter") as mock_json_formatter,
+        ):
+            mock_root = MagicMock()
+            mock_get_logger.return_value = mock_root
 
-                setup_logging(level="DEBUG", json_format=True)
+            setup_logging(level="DEBUG", json_format=True)
 
-                mock_json_formatter.assert_called_once()
+            mock_json_formatter.assert_called_once()
 
     def test_setup_logging_with_file(self, tmp_path):
         """Test setup with log file."""
         log_file = tmp_path / "test.log"
 
-        with patch("logging.getLogger") as mock_get_logger:
-            with patch("logging.FileHandler") as mock_file_handler:
-                mock_root = MagicMock()
-                mock_get_logger.return_value = mock_root
+        with (
+            patch("logging.getLogger") as mock_get_logger,
+            patch("logging.FileHandler") as mock_file_handler,
+        ):
+            mock_root = MagicMock()
+            mock_get_logger.return_value = mock_root
 
-                setup_logging(level="INFO", log_file=log_file)
+            setup_logging(level="INFO", log_file=log_file)
 
-                mock_file_handler.assert_called_once_with(log_file, encoding="utf-8")
-                assert mock_root.addHandler.call_count == 2  # Console + File
+            mock_file_handler.assert_called_once_with(log_file, encoding="utf-8")
+            assert mock_root.addHandler.call_count == 2  # Console + File
 
     def test_setup_logging_creates_directories(self, tmp_path):
         """Test that log file directories are created."""
         log_file = tmp_path / "logs" / "subdir" / "test.log"
 
-        with patch("logging.getLogger"):
-            with patch("logging.FileHandler"):
-                setup_logging(log_file=log_file)
+        with patch("logging.getLogger"), patch("logging.FileHandler"):
+            setup_logging(log_file=log_file)
 
         assert log_file.parent.exists()
 
     def test_setup_logging_third_party_levels(self):
         """Test that third-party library levels are reduced."""
+        third_party_loggers = {}
+
+        def get_logger_side_effect(name=None):
+            if name is None or name == "":
+                mock_root = MagicMock()
+                return mock_root
+            mock_logger = MagicMock()
+            third_party_loggers[name] = mock_logger
+            return mock_logger
+
         with patch("logging.getLogger") as mock_get_logger:
-            mock_root = MagicMock()
-            mock_get_logger.return_value = mock_root
+            mock_get_logger.side_effect = get_logger_side_effect
 
             setup_logging(level="DEBUG")
 
-            # Should get logger for third-party libraries
-            calls = mock_get_logger.call_args_list
-            library_names = [call[0][0] for call in calls]
-            assert "urllib3" in library_names or any("urllib3" in str(call) for call in calls)
+            # Verify third-party libraries have their levels set to WARNING
+            assert "urllib3" in third_party_loggers
+            assert third_party_loggers["urllib3"].setLevel.called
+            # Verify it was called with WARNING (30)
+            call_args = third_party_loggers["urllib3"].setLevel.call_args
+            assert call_args[0][0] == logging.WARNING
 
 
 class TestGetLogger:

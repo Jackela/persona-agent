@@ -1,15 +1,16 @@
 """Unit tests for SessionService."""
 
-import pytest
 from datetime import datetime
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
 
-from persona_agent.services.session_service import (
-    SessionService,
-    SessionNotFoundError,
-    SessionDeleteError,
-)
+import pytest
+
 from persona_agent.repositories import Session
+from persona_agent.services.session_service import (
+    SessionDeleteError,
+    SessionNotFoundError,
+    SessionService,
+)
 
 
 class TestSessionService:

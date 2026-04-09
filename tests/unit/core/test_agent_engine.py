@@ -1,7 +1,6 @@
 """Tests for agent_engine module."""
 
 import uuid
-from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -40,7 +39,7 @@ class TestAgentEngine:
         response.content = "Hello, I'm an AI assistant."
         client.chat.return_value = response
 
-        async def mock_stream():
+        async def mock_stream(*args, **kwargs):
             yield "Hello"
             yield ", "
             yield "world!"
@@ -153,7 +152,6 @@ class TestAgentEngine:
     async def test_chat_with_history(self, agent_engine, mock_memory_store):
         """Test chat includes conversation history."""
         # Setup some history
-        from persona_agent.core.memory_store import Memory
 
         mock_memory = MagicMock()
         mock_memory.user_message = "Previous message"
@@ -164,7 +162,11 @@ class TestAgentEngine:
 
         # Verify messages include history
         call_args = agent_engine.llm_client.chat.call_args
-        messages = call_args[1]["messages"]
+        # Handle both positional and keyword arguments
+        if call_args[1] and "messages" in call_args[1]:
+            messages = call_args[1]["messages"]
+        else:
+            messages = call_args[0][0]
 
         assert len(messages) > 2  # System + history + current
         assert messages[0]["role"] == "system"

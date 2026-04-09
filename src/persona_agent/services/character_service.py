@@ -9,6 +9,8 @@ from persona_agent.config.loader import ConfigLoader
 from persona_agent.config.schemas.character import CharacterProfile
 from persona_agent.utils.exceptions import (
     ConfigurationError,
+)
+from persona_agent.utils.exceptions import (
     FileNotFoundError as PAFileNotFoundError,
 )
 

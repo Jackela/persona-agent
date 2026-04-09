@@ -13,7 +13,6 @@ import pytest
 import pytest_asyncio
 import yaml
 
-from persona_agent.config.schemas.character import CharacterProfile
 from persona_agent.repositories import SessionRepository
 from persona_agent.services.character_service import CharacterService
 from persona_agent.services.chat_service import ChatService

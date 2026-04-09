@@ -4,10 +4,8 @@ Factories for creating test data objects. Inspired by factory_boy pattern.
 """
 
 import uuid
-from datetime import datetime, timedelta
-from typing import Any, Optional
-
-import pytest
+from datetime import datetime
+from typing import Any
 
 
 class CharacterFactory:
@@ -28,7 +26,7 @@ class CharacterFactory:
         empathy: str = "high",
         backstory: str = "A helpful test assistant.",
         primary_goal: str = "Help users",
-        secondary_goals: Optional[list[str]] = None,
+        secondary_goals: list[str] | None = None,
     ) -> dict[str, Any]:
         """Build a character configuration dict.
 
@@ -82,7 +80,7 @@ class ConfigFactory:
 
     @staticmethod
     def build_linguistic_style(
-        nicknames: Optional[list[str]] = None,
+        nicknames: list[str] | None = None,
         kaomoji_enabled: bool = True,
         sentence_length: str = "medium",
     ) -> dict[str, Any]:
@@ -161,11 +159,11 @@ class SessionFactory:
 
     @staticmethod
     def build(
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
         user_id: str = "test_user",
         character_name: str = "TestBot",
-        created_at: Optional[datetime] = None,
-        last_activity: Optional[datetime] = None,
+        created_at: datetime | None = None,
+        last_activity: datetime | None = None,
     ) -> dict[str, Any]:
         """Build a session dictionary.
 
@@ -194,7 +192,7 @@ class SessionFactory:
     def build_message(
         content: str = "Hello, world!",
         role: str = "user",
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ) -> dict[str, Any]:
         """Build a message dictionary.
 

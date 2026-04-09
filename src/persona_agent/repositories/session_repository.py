@@ -58,7 +58,7 @@ class SessionRepository(BaseRepository[Session, str]):
             self._initialize_schema()
             self._connected = True
         except sqlite3.Error as e:
-            raise ConnectionError(f"Failed to connect to database: {e}")
+            raise ConnectionError(f"Failed to connect to database: {e}") from e
 
     async def disconnect(self) -> None:
         """Close connection to the SQLite database.
@@ -149,9 +149,9 @@ class SessionRepository(BaseRepository[Session, str]):
         except sqlite3.IntegrityError as e:
             from persona_agent.repositories.base import DuplicateEntityError
 
-            raise DuplicateEntityError("Session", entity.session_id)
+            raise DuplicateEntityError("Session", entity.session_id) from e
         except sqlite3.Error as e:
-            raise RepositoryError(f"Failed to create session: {e}")
+            raise RepositoryError(f"Failed to create session: {e}") from e
 
     async def get_by_id(self, entity_id: str) -> Session | None:
         """Retrieve a session by its identifier.
@@ -266,7 +266,7 @@ class SessionRepository(BaseRepository[Session, str]):
             self._connection.commit()
             return entity
         except sqlite3.Error as e:
-            raise RepositoryError(f"Failed to update session: {e}")
+            raise RepositoryError(f"Failed to update session: {e}") from e
 
     async def delete(self, entity_id: str) -> bool:
         """Delete a session by its identifier.
@@ -291,7 +291,7 @@ class SessionRepository(BaseRepository[Session, str]):
             self._connection.commit()
             return cursor.rowcount > 0
         except sqlite3.Error as e:
-            raise RepositoryError(f"Failed to delete session: {e}")
+            raise RepositoryError(f"Failed to delete session: {e}") from e
 
     async def exists(self, entity_id: str) -> bool:
         """Check if a session exists.
@@ -426,7 +426,7 @@ class SessionRepository(BaseRepository[Session, str]):
         try:
             transaction.commit()
         except sqlite3.Error as e:
-            raise RepositoryError(f"Failed to commit transaction: {e}")
+            raise RepositoryError(f"Failed to commit transaction: {e}") from e
 
     async def rollback_transaction(self, transaction: Any) -> None:
         """Rollback a database transaction.
@@ -440,4 +440,4 @@ class SessionRepository(BaseRepository[Session, str]):
         try:
             transaction.rollback()
         except sqlite3.Error as e:
-            raise RepositoryError(f"Failed to rollback transaction: {e}")
+            raise RepositoryError(f"Failed to rollback transaction: {e}") from e

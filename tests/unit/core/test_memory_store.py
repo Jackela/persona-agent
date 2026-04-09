@@ -1,6 +1,5 @@
 """Tests for memory_store module."""
 
-import json
 import tempfile
 from pathlib import Path
 

@@ -4,22 +4,20 @@ Tests direct interactions between services without going through the full
 chat workflow, verifying service boundaries and data consistency.
 """
 
-import pytest
 from datetime import datetime
 from unittest.mock import Mock
 
-from persona_agent.config.schemas.character import CharacterProfile
+import pytest
+
+from persona_agent.repositories import SessionRepository
 from persona_agent.repositories.models import Session
 from persona_agent.services.character_service import (
     CharacterService,
-    CharacterNotFoundError,
 )
 from persona_agent.services.chat_service import ChatService, ChatSessionNotFoundError
 from persona_agent.services.session_service import (
     SessionService,
-    SessionNotFoundError,
 )
-from persona_agent.repositories import SessionRepository
 from persona_agent.utils.llm_client import LLMResponse
 
 

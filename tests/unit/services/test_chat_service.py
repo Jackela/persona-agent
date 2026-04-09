@@ -1,18 +1,19 @@
 """Unit tests for ChatService."""
 
-import pytest
 from datetime import datetime
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+
+from persona_agent.repositories import Session
+from persona_agent.services.character_service import CharacterNotFoundError
 from persona_agent.services.chat_service import (
-    ChatService,
-    ChatSessionNotFoundError,
-    ChatPersonaNotFoundError,
     ChatLLMError,
     ChatMessageError,
+    ChatPersonaNotFoundError,
+    ChatService,
+    ChatSessionNotFoundError,
 )
-from persona_agent.services.character_service import CharacterNotFoundError
-from persona_agent.repositories import Session
 
 
 class TestChatService:

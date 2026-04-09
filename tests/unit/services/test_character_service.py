@@ -1,15 +1,15 @@
 """Unit tests for CharacterService."""
 
-import pytest
-from pathlib import Path
 from unittest.mock import Mock, patch
 
-from persona_agent.services.character_service import (
-    CharacterService,
-    CharacterNotFoundError,
-    CharacterLoadError,
-)
+import pytest
+
 from persona_agent.config.schemas.character import CharacterProfile
+from persona_agent.services.character_service import (
+    CharacterLoadError,
+    CharacterNotFoundError,
+    CharacterService,
+)
 
 
 class TestCharacterService:

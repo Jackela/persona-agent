@@ -117,7 +117,7 @@ class MoodDefinition(BaseModel):
             elif current_field == "mixing_guidance":
                 mixing = "\n".join(current_content).strip()
             elif current_field == "behaviors":
-                behaviors = current_content
+                _behaviors = current_content  # Parsed for completeness
 
         for line in lines[1:]:
             line = line.strip()

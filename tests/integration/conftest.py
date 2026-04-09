@@ -20,7 +20,6 @@ from persona_agent.services.chat_service import ChatService
 from persona_agent.services.session_service import SessionService
 from persona_agent.utils.llm_client import LLMClient, LLMResponse
 
-
 # ============================================================================
 # Event Loop and Async Fixtures
 # ============================================================================

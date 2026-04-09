@@ -86,8 +86,7 @@ class SessionRepository(BaseRepository[Session, str]):
         if not self._connection:
             return
 
-        self._connection.executescript(
-            """
+        self._connection.executescript("""
             CREATE TABLE IF NOT EXISTS sessions (
                 session_id TEXT PRIMARY KEY,
                 last_activity TIMESTAMP NOT NULL
@@ -108,8 +107,7 @@ class SessionRepository(BaseRepository[Session, str]):
 
             CREATE INDEX IF NOT EXISTS idx_messages_session
                 ON messages(session_id);
-            """
-        )
+            """)
         self._connection.commit()
 
     async def create(self, entity: Session) -> Session:

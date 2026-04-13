@@ -614,8 +614,19 @@ def memory_stats() -> None:
         formatter.print_error(f"Failed to get memory stats: {e}")
 
 
+@cli.command()
+@click.option("--host", default="127.0.0.1", help="Host to bind to")
+@click.option("--port", "-p", default=8080, type=int, help="Port to listen on")
+@click.option("--reload", is_flag=True, help="Enable auto-reload")
+def web(host: str, port: int, reload: bool) -> None:
+    """Launch the Persona Agent web UI."""
+    import uvicorn
+
+    console.print(f"[bold green]Starting Persona Agent Web UI at http://{host}:{port}[/bold green]")
+    uvicorn.run("persona_agent.ui.web.server:app", host=host, port=port, reload=reload)
+
+
 def main() -> None:
-    """Main entry point."""
     cli()
 
 

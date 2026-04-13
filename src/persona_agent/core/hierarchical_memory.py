@@ -987,6 +987,42 @@ class HierarchicalMemory:
             fusion_score=round(score, 2),
         )
 
+    def export_graph(self) -> dict[str, list[dict]]:
+        """Export semantic memory graph as Cytoscape.js-compatible JSON.
+
+        Returns:
+            Dictionary with nodes and edges in Cytoscape.js format
+        """
+        nodes: list[dict] = []
+        edges: list[dict] = []
+
+        for node, data in self.semantic.graph.nodes(data=True):
+            node_type = data.get("node_type", "entity")
+            label = data.get("content", node) if node_type == "fact" else node
+            nodes.append(
+                {
+                    "data": {
+                        "id": node,
+                        "label": label,
+                        "type": node_type,
+                    }
+                }
+            )
+
+        for source, target, data in self.semantic.graph.edges(data=True):
+            edges.append(
+                {
+                    "data": {
+                        "source": source,
+                        "target": target,
+                        "label": data.get("predicate", "related_to"),
+                        "confidence": data.get("confidence", 1.0),
+                    }
+                }
+            )
+
+        return {"nodes": nodes, "edges": edges}
+
     def get_stats(self) -> dict[str, Any]:
         """Get statistics about the memory system.
 

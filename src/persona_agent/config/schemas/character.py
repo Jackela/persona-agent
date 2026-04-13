@@ -175,6 +175,17 @@ class CharacterProfile(BaseModel):
 
         return cls(**data)
 
+    def to_yaml(self, path: Path) -> None:
+        """Serialize character profile to YAML file.
+
+        Args:
+            path: Path to write the YAML file
+        """
+        path.write_text(
+            yaml.safe_dump(self.model_dump(), allow_unicode=True, sort_keys=False),
+            encoding="utf-8",
+        )
+
     def to_prompt_context(self) -> str:
         """Convert profile to a system prompt context string.
 

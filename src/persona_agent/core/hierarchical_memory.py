@@ -17,7 +17,7 @@ import re
 import uuid
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
 try:
@@ -72,7 +72,7 @@ class WorkingMemory:
             {
                 "user": user_msg,
                 "assistant": assistant_msg,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 
@@ -207,7 +207,7 @@ class EpisodicMemory:
             Created MemoryEntry
         """
         entry_id = str(uuid.uuid4())
-        now = datetime.now()
+        now = datetime.now(UTC)
 
         episodic_entry = EpisodicEntry(
             id=entry_id,

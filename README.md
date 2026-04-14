@@ -41,9 +41,24 @@ cd persona-agent
 # 安装依赖
 pip install -e ".[dev]"
 
-# 配置 API 密钥
+# 安装并启动 Ollama（默认 LLM 后端）
+# macOS / Linux: https://ollama.com/download
+curl -fsSL https://ollama.com/install.sh | sh
+
+# 拉取默认模型
+ollama pull qwen2.5
+# 或 llama3.2
+# ollama pull llama3.2
+```
+
+> **Docker 用户注意**：如果在容器内运行 persona-agent，请添加 `--add-host=host.docker.internal:host-gateway`，以便容器访问宿主机的 Ollama 服务（默认 `http://host.docker.internal:11434`）。
+
+#### 可选：使用云端 API 作为备用
+
+```bash
+# 配置 OpenAI API 密钥
 export OPENAI_API_KEY="your-key"
-# 或
+# 或 Anthropic
 export ANTHROPIC_API_KEY="your-key"
 ```
 

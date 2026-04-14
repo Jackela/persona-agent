@@ -29,7 +29,7 @@ class LLMConfig(BaseModel):
         max_retries: Maximum retry attempts
     """
 
-    provider: str = Field(default="openai", pattern=r"^(openai|anthropic|local)$")
+    provider: str = Field(default="ollama", pattern=r"^(ollama|openai|anthropic|local)$")
     model: str | None = None
     api_key: str | None = None
     base_url: str | None = None
@@ -178,9 +178,7 @@ class ApplicationSettings(BaseModel):
 
     @field_validator("planning", mode="before")
     @classmethod
-    def validate_planning(
-        cls, v: dict | PlanningSystemConfig | None
-    ) -> PlanningSystemConfig:
+    def validate_planning(cls, v: dict | PlanningSystemConfig | None) -> PlanningSystemConfig:
         """Handle both dict and object inputs."""
         if v is None:
             return PlanningSystemConfig()
@@ -266,8 +264,13 @@ class ApplicationSettings(BaseModel):
             if isinstance(value, dict) and not isinstance(value, (str, bytes)):
                 # Check if this is a subsystem config (has its own validator)
                 subsystem_keys = [
-                    "llm", "database", "logging", "session",
-                    "planning", "memory", "skill_evolution"
+                    "llm",
+                    "database",
+                    "logging",
+                    "session",
+                    "planning",
+                    "memory",
+                    "skill_evolution",
                 ]
                 if key in subsystem_keys:
                     result[key] = value

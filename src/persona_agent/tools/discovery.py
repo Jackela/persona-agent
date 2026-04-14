@@ -216,10 +216,7 @@ class ToolRegistry:
                 ToolRiskLevel.CRITICAL: 3,
             }
             max_level = risk_order.get(max_risk, 3)
-            tools = [
-                t for t in tools
-                if risk_order.get(t.risk_level, 3) <= max_level
-            ]
+            tools = [t for t in tools if risk_order.get(t.risk_level, 3) <= max_level]
 
         return tools
 
@@ -326,7 +323,7 @@ class ToolRegistry:
 
         return discovered
 
-    def get_all_schemas_for_llm(self, provider: str = "openai") -> list[dict[str, Any]]:
+    def get_all_schemas_for_llm(self, provider: str = "ollama") -> list[dict[str, Any]]:
         """Get all tool schemas formatted for LLM function calling.
 
         Args:

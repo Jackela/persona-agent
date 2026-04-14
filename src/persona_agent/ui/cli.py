@@ -39,8 +39,8 @@ def cli() -> None:
 )
 @click.option(
     "--provider",
-    default="openai",
-    type=click.Choice(["openai", "anthropic", "local"]),
+    default="ollama",
+    type=click.Choice(["ollama", "openai", "anthropic", "local"]),
     help="LLM provider",
 )
 @click.option(
@@ -204,7 +204,7 @@ async def _plan_create_async(goal: str, execute: bool) -> None:
 
     try:
         # Initialize engine
-        llm_client = LLMClient(provider="openai")
+        llm_client = LLMClient(provider="ollama")
         agent_engine = AgentEngine(llm_client=llm_client)
 
         # Create plan

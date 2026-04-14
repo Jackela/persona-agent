@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project artifacts
+*.egg-info/
+dist/
+build/
+
+# Memory files (keep directory structure via volume mounts)
+memory/*.db
+memory/*.sqlite
+memory/*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Documentation build
+docs/_build/
+
+# CI/Development
+.github/
+.benchmarks/
+.mypy_cache/
+.ruff_cache/
+.pre-commit-config.yaml
+run_ci_checks.sh
+setup-opencode-env.sh
+verify-installation.sh
+verify_config.py
+verify_pixel.py
+verify_system.py
+
+# Screenshots and generated images
+*.png
+*.jpg
+*.jpeg

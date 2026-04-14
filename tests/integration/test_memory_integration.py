@@ -170,9 +170,7 @@ class TestMemoryCompactionIntegration:
 
         # Mock summarizer
         mock_summarizer = Mock(spec=MemorySummarizer)
-        mock_summarizer.summarize_memories = AsyncMock(
-            return_value="Summary of old episodes"
-        )
+        mock_summarizer.summarize_memories = AsyncMock(return_value="Summary of old episodes")
 
         compactor = MemoryCompactor(episodic, summarizer=mock_summarizer)
 
@@ -304,13 +302,13 @@ class TestMemoryEdgeCases:
         assert "bob" in related
 
     async def test_entity_extraction(self, hierarchical_memory):
-        """Test entity extraction from text."""
+        """Test entity extraction returns empty for GDPR compliance."""
         text = "My name is Alice and I work at Google. I live in New York."
 
         entities = hierarchical_memory.semantic.extract_entities(text)
 
-        # Should extract proper nouns
-        assert "alice" in entities or "google" in entities or "new york" in entities
+        # Regex-based PII extraction removed for GDPR compliance
+        assert entities == []
 
     async def test_fact_extraction_from_exchange(self, hierarchical_memory):
         """Test that facts are extracted from conversation exchanges."""

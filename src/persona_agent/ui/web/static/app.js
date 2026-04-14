@@ -1,4 +1,6 @@
 (function () {
+    const API_KEY = 'dev';
+
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
     const sidebar = document.getElementById('sidebar');
     const navItems = document.querySelectorAll('.nav-item');
@@ -11,8 +13,6 @@
         personas: { title: '人格管理', subtitle: '创建、编辑和配置你的 AI 人格' },
         chat: { title: '对话', subtitle: '与你的 AI 伙伴进行实时交流' },
         memory: { title: '记忆库', subtitle: '查看和管理跨会话记忆' },
-        skills: { title: '技能中心', subtitle: '加载和配置 AI 技能扩展' },
-        settings: { title: '设置', subtitle: '调整系统参数和偏好' },
     };
 
     const sectionMap = {
@@ -20,8 +20,6 @@
         personas: 'persona-editor',
         chat: 'chat',
         memory: 'memory-viz',
-        skills: 'skills',
-        settings: 'settings',
     };
 
     function showSection(sectionId) {
@@ -119,12 +117,38 @@
         setTimeout(() => toast.classList.remove('show'), 2500);
     }
 
+    async function loadDashboardStats() {
+        try {
+            const res = await fetch('/api/stats', {
+                headers: { 'X-API-Key': API_KEY },
+            });
+            if (!res.ok) throw new Error('Failed to load stats');
+            const data = await res.json();
+
+            const personaEl = document.getElementById('stat-personas');
+            const sessionsEl = document.getElementById('stat-sessions');
+            const memoryEl = document.getElementById('stat-memory');
+            const skillsEl = document.getElementById('stat-skills');
+
+            if (personaEl) animateValue(personaEl, 0, data.persona_count || 0, 600);
+            if (sessionsEl) animateValue(sessionsEl, 0, data.session_count_today || 0, 600);
+            if (memoryEl) animateValue(memoryEl, 0, data.memory_count || 0, 600);
+            if (skillsEl) animateValue(skillsEl, 0, data.skills_count || 0, 600);
+        } catch (err) {
+            console.error('Failed to load dashboard stats:', err);
+        }
+    }
+
+    loadDashboardStats();
+    setInterval(loadDashboardStats, 30000);
+
     const chatSessionList = document.getElementById('chatSessionList');
     const chatThread = document.getElementById('chatThread');
     const chatInput = document.getElementById('chatInput');
     const chatSend = document.getElementById('chatSend');
     const chatTyping = document.getElementById('chatTyping');
     const chatNewSession = document.getElementById('chatNewSession');
+    const streamToggle = document.getElementById('streamToggle');
     let currentSessionId = '1';
     let isWaiting = false;
 
@@ -149,6 +173,41 @@
         return div.innerHTML;
     }
 
+    function sanitizeHtml(html) {
+        if (typeof html !== 'string') return '';
+        if (typeof window.DOMPurify !== 'undefined') {
+            return window.DOMPurify.sanitize(html, {
+                ALLOWED_TAGS: [
+                    'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+                    'a', 'img', 'code', 'pre', 'blockquote', 'hr',
+                    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                    'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+                    'table', 'thead', 'tbody', 'tr', 'th', 'td',
+                    'sup', 'sub', 'del', 'ins', 'mark'
+                ],
+                ALLOWED_ATTR: ['href', 'title', 'src', 'alt', 'class', 'target', 'rel']
+            });
+        }
+        return html
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+            .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+            .replace(/<embed\b[^>]*>/gi, '')
+            .replace(/on\w+\s*=/gi, 'data-blocked=');
+    }
+
+    function renderMarkdown(text) {
+        if (typeof marked !== 'undefined') {
+            try {
+                const raw = marked.parse(text, { async: false });
+                return sanitizeHtml(raw);
+            } catch (e) {
+                return escapeHtml(text);
+            }
+        }
+        return escapeHtml(text);
+    }
+
     function scrollToBottom() {
         chatThread.scrollTop = chatThread.scrollHeight;
     }
@@ -164,25 +223,27 @@
     function addAssistantMessage(text) {
         const msg = document.createElement('div');
         msg.className = 'chat-message chat-message-assistant';
-        msg.innerHTML = `<div class="chat-avatar mood-joyful">温</div><div class="chat-bubble">${escapeHtml(text)}</div>`;
+        msg.innerHTML = `<div class="chat-avatar mood-joyful">温</div><div class="chat-bubble markdown-body">${renderMarkdown(text)}</div>`;
         chatThread.appendChild(msg);
         scrollToBottom();
+        return msg;
     }
 
-    async function sendMessage() {
-        const text = chatInput.value.trim();
-        if (!text || isWaiting) return;
-        chatInput.value = '';
-        addUserMessage(text);
-        isWaiting = true;
-        chatTyping.style.display = 'flex';
+    function createStreamingMessage() {
+        const msg = document.createElement('div');
+        msg.className = 'chat-message chat-message-assistant';
+        msg.innerHTML = `<div class="chat-avatar mood-joyful">温</div><div class="chat-bubble markdown-body"></div>`;
+        chatThread.appendChild(msg);
         scrollToBottom();
+        return msg;
+    }
 
+    async function sendMessageNonStream(text) {
         try {
             const res = await fetch(`/api/sessions/${currentSessionId}/messages`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: text }),
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+                body: JSON.stringify({ message: text }),
             });
             const data = await res.json();
             chatTyping.style.display = 'none';
@@ -201,6 +262,70 @@
         }
     }
 
+    async function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text || isWaiting) return;
+        chatInput.value = '';
+        addUserMessage(text);
+        isWaiting = true;
+        chatTyping.style.display = 'flex';
+        scrollToBottom();
+
+        const useStream = streamToggle && streamToggle.checked;
+        if (!useStream) {
+            await sendMessageNonStream(text);
+            return;
+        }
+
+        const encodedMessage = encodeURIComponent(text);
+        const evtSource = new EventSource(
+            `/api/sessions/${currentSessionId}/messages/stream?message=${encodedMessage}&api_key=${API_KEY}`
+        );
+
+        const msgEl = createStreamingMessage();
+        const bubble = msgEl.querySelector('.chat-bubble');
+        let rawText = '';
+        let hasReceivedData = false;
+
+        evtSource.onmessage = (event) => {
+            hasReceivedData = true;
+            try {
+                const data = JSON.parse(event.data);
+                if (data.done) {
+                    evtSource.close();
+                    chatTyping.style.display = 'none';
+                    isWaiting = false;
+                    if (bubble) bubble.innerHTML = renderMarkdown(rawText);
+                } else if (data.token !== undefined) {
+                    rawText += data.token;
+                    if (bubble) {
+                        bubble.textContent = rawText;
+                        scrollToBottom();
+                    }
+                } else if (data.error) {
+                    evtSource.close();
+                    chatTyping.style.display = 'none';
+                    isWaiting = false;
+                    if (bubble) bubble.textContent = data.error;
+                }
+            } catch (e) {
+                console.error('Failed to parse SSE data:', e);
+            }
+        };
+
+        evtSource.onerror = () => {
+            evtSource.close();
+            if (!hasReceivedData) {
+                msgEl.remove();
+                sendMessageNonStream(text);
+            } else {
+                chatTyping.style.display = 'none';
+                isWaiting = false;
+                if (bubble) bubble.innerHTML = renderMarkdown(rawText);
+            }
+        };
+    }
+
     if (chatSend) chatSend.addEventListener('click', sendMessage);
     if (chatInput) {
         chatInput.addEventListener('keydown', (e) => {
@@ -211,7 +336,7 @@
     if (chatNewSession) {
         chatNewSession.addEventListener('click', async () => {
             try {
-                const res = await fetch('/api/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const res = await fetch('/api/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY } });
                 const data = await res.json();
                 const id = data.id || String(Date.now());
                 currentSessionId = id;
@@ -232,6 +357,44 @@
     const personaSaveBtn = document.getElementById('personaSaveBtn');
     const traitSliders = ['peOpenness', 'peConscientiousness', 'peExtraversion', 'peAgreeableness', 'peNeuroticism'];
 
+    const personalityPresets = {
+        warm: { openness: 0.6, conscientiousness: 0.7, extraversion: 0.4, agreeableness: 0.9, neuroticism: 0.3 },
+        professional: { openness: 0.6, conscientiousness: 0.9, extraversion: 0.2, agreeableness: 0.6, neuroticism: 0.2 },
+        creative: { openness: 0.9, conscientiousness: 0.5, extraversion: 0.6, agreeableness: 0.7, neuroticism: 0.5 },
+        humorous: { openness: 0.7, conscientiousness: 0.5, extraversion: 0.8, agreeableness: 0.7, neuroticism: 0.4 },
+    };
+
+    const pePersonalityPreset = document.getElementById('pePersonalityPreset');
+
+    function applyPreset(presetKey) {
+        const preset = personalityPresets[presetKey];
+        if (!preset) return;
+        const map = {
+            peOpenness: preset.openness,
+            peConscientiousness: preset.conscientiousness,
+            peExtraversion: preset.extraversion,
+            peAgreeableness: preset.agreeableness,
+            peNeuroticism: preset.neuroticism,
+        };
+        Object.entries(map).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            const valEl = document.getElementById(id.replace('pe', 'val'));
+            if (el) {
+                el.value = value;
+                if (valEl) valEl.textContent = parseFloat(value).toFixed(1);
+            }
+        });
+    }
+
+    if (pePersonalityPreset) {
+        pePersonalityPreset.addEventListener('change', () => {
+            const val = pePersonalityPreset.value;
+            if (val) {
+                applyPreset(val);
+            }
+        });
+    }
+
     traitSliders.forEach((id) => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -245,7 +408,7 @@
     async function loadPersona() {
         const name = personaSelect ? personaSelect.value : 'default';
         try {
-            const res = await fetch(`/api/characters/${name}`);
+            const res = await fetch(`/api/characters/${name}`, { headers: { 'X-API-Key': API_KEY } });
             if (!res.ok) throw new Error('Failed to load');
             const data = await res.json();
             document.getElementById('peName').value = data.name || '';
@@ -272,6 +435,7 @@
                         if (valEl) valEl.textContent = parseFloat(value).toFixed(1);
                     }
                 });
+                if (pePersonalityPreset) pePersonalityPreset.value = '';
             }
 
             if (data.traits && data.traits.communication_style) {
@@ -320,7 +484,7 @@
         try {
             const res = await fetch(`/api/characters/${name}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
                 body: JSON.stringify(payload),
             });
             if (!res.ok) throw new Error('Failed to save');
@@ -334,91 +498,53 @@
     if (personaSaveBtn) personaSaveBtn.addEventListener('click', savePersona);
 
     const memoryLoadGraph = document.getElementById('memoryLoadGraph');
-    let cyInstance = null;
+    const memoryListContent = document.getElementById('memoryListContent');
 
-    function initCytoscape() {
-        if (cyInstance) return cyInstance;
-        const container = document.getElementById('memoryGraph');
-        if (!container || typeof cytoscape === 'undefined') return null;
-        cyInstance = cytoscape({
-            container: container,
-            style: [
-                {
-                    selector: 'node',
-                    style: {
-                        'background-color': '#525252',
-                        'label': 'data(label)',
-                        'color': '#fafafa',
-                        'font-size': '12px',
-                        'text-valign': 'center',
-                        'text-halign': 'center',
-                        'width': 36,
-                        'height': 36,
-                        'border-width': 2,
-                        'border-color': '#0a0a0a',
-                    },
-                },
-                {
-                    selector: 'node[type="working"]',
-                    style: { 'background-color': '#e07a5f' },
-                },
-                {
-                    selector: 'node[type="episodic"]',
-                    style: { 'background-color': '#f59e0b' },
-                },
-                {
-                    selector: 'node[type="semantic"]',
-                    style: { 'background-color': '#10b981' },
-                },
-                {
-                    selector: 'node[type="fact"]',
-                    style: { 'background-color': '#525252' },
-                },
-                {
-                    selector: 'edge',
-                    style: {
-                        'width': 2,
-                        'line-color': 'rgba(255,255,255,0.15)',
-                        'target-arrow-color': 'rgba(255,255,255,0.15)',
-                        'target-arrow-shape': 'triangle',
-                        'curve-style': 'bezier',
-                    },
-                },
-            ],
-            layout: { name: 'grid', padding: 10 },
-            wheelSensitivity: 0.3,
-            minZoom: 0.2,
-            maxZoom: 3,
-        });
-        return cyInstance;
+    async function loadMemoryStats() {
+        try {
+            const res = await fetch('/api/memory/stats', { headers: { 'X-API-Key': API_KEY } });
+            if (!res.ok) throw new Error('Failed to load memory stats');
+            const data = await res.json();
+
+            const working = data.working || {};
+            const episodic = data.episodic || {};
+            const semantic = data.semantic || {};
+
+            document.getElementById('statWorkingMem').textContent = working.exchanges !== undefined ? working.exchanges : 0;
+            document.getElementById('statEpisodic').textContent = episodic.total_episodes !== undefined ? episodic.total_episodes : 0;
+            document.getElementById('statSemantic').textContent = semantic.entities !== undefined ? semantic.entities : 0;
+
+            const fusion = semantic.relations && semantic.entities
+                ? Math.round((semantic.relations / Math.max(semantic.entities, 1)) * 100) + '%'
+                : '0%';
+            document.getElementById('statFusion').textContent = fusion;
+
+            if (memoryListContent) {
+                memoryListContent.innerHTML =
+                    '<li class="memory-list-item"><span class="memory-list-label">工作记忆交换</span><span class="memory-list-value">' +
+                    (working.exchanges !== undefined ? working.exchanges : 0) +
+                    ' / ' +
+                    (working.max_size !== undefined ? working.max_size : '--') +
+                    '</span></li>' +
+                    '<li class="memory-list-item"><span class="memory-list-label">情景记忆片段</span><span class="memory-list-value">' +
+                    (episodic.total_episodes !== undefined ? episodic.total_episodes : 0) +
+                    '</span></li>' +
+                    '<li class="memory-list-item"><span class="memory-list-label">语义实体</span><span class="memory-list-value">' +
+                    (semantic.entities !== undefined ? semantic.entities : 0) +
+                    '</span></li>' +
+                    '<li class="memory-list-item"><span class="memory-list-label">语义事实</span><span class="memory-list-value">' +
+                    (semantic.facts !== undefined ? semantic.facts : 0) +
+                    '</span></li>' +
+                    '<li class="memory-list-item"><span class="memory-list-label">语义关系</span><span class="memory-list-value">' +
+                    (semantic.relations !== undefined ? semantic.relations : 0) +
+                    '</span></li>';
+            }
+        } catch (err) {
+            showToast('加载记忆统计失败');
+        }
     }
 
     if (memoryLoadGraph) {
-        memoryLoadGraph.addEventListener('click', async () => {
-            try {
-                const res = await fetch('/api/memory/graph');
-                const data = await res.json();
-                const cy = initCytoscape();
-                if (!cy) return;
-
-                const nodes = (data.nodes || []).map((n) => ({
-                    data: { id: n.id, label: n.label || n.id, type: n.type || 'fact' },
-                }));
-                const edges = (data.edges || []).map((e) => ({
-                    data: { id: e.id || `${e.source}-${e.target}`, source: e.source, target: e.target },
-                }));
-
-                cy.elements().remove();
-                cy.add([...nodes, ...edges]);
-                cy.layout({ name: 'cose', padding: 20, animate: true, animationDuration: 500 }).run();
-
-                document.getElementById('statWorkingMem').textContent = data.stats && data.stats.working !== undefined ? data.stats.working : nodes.filter((n) => n.data.type === 'working').length;
-                document.getElementById('statEpisodic').textContent = data.stats && data.stats.episodic !== undefined ? data.stats.episodic : nodes.filter((n) => n.data.type === 'episodic').length;
-                document.getElementById('statSemantic').textContent = data.stats && data.stats.semantic !== undefined ? data.stats.semantic : nodes.filter((n) => n.data.type === 'semantic').length;
-                document.getElementById('statFusion').textContent = data.stats && data.stats.fusion !== undefined ? data.stats.fusion + '%' : '0%';
-            } catch (err) {
-                showToast('加载图谱失败');
-            }
-        });
+        memoryLoadGraph.addEventListener('click', loadMemoryStats);
     }
 })();

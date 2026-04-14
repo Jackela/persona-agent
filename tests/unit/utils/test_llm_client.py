@@ -10,6 +10,7 @@ from persona_agent.utils.llm_client import (
     BaseLLMClient,
     LLMClient,
     LLMResponse,
+    OllamaClient,
     OpenAIClient,
 )
 
@@ -314,6 +315,126 @@ class TestAnthropicClient:
         assert chunks == ["Hello", " Claude"]
 
 
+class TestOllamaClient:
+    """Tests for OllamaClient."""
+
+    @pytest.fixture
+    def mock_httpx_client(self):
+        """Mock httpx.AsyncClient."""
+        with patch("persona_agent.utils.llm_client.httpx.AsyncClient") as mock:
+            client = AsyncMock()
+            mock.return_value = client
+            yield client
+
+    def test_init_default_url_and_model(self):
+        """Test initialization with default URL and model."""
+        with patch.dict(os.environ, {}, clear=True):
+            client = OllamaClient()
+
+            assert client.base_url == "http://localhost:11434"
+            assert client.default_model == "qwen2.5"
+
+    def test_init_with_custom_url_and_model(self):
+        """Test initialization with custom URL and model."""
+        client = OllamaClient(base_url="http://ollama:11434", model="llama3.2")
+
+        assert client.base_url == "http://ollama:11434"
+        assert client.default_model == "llama3.2"
+
+    def test_init_with_env_vars(self):
+        """Test initialization with environment variables."""
+        with patch.dict(
+            os.environ,
+            {"OLLAMA_BASE_URL": "http://host.docker.internal:11434", "OLLAMA_MODEL": "llama3.2"},
+        ):
+            client = OllamaClient()
+
+            assert client.base_url == "http://host.docker.internal:11434"
+            assert client.default_model == "llama3.2"
+
+    @pytest.mark.asyncio
+    async def test_chat_success(self, mock_httpx_client):
+        """Test successful chat completion."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "model": "qwen2.5",
+            "message": {"role": "assistant", "content": "Hello from Ollama!"},
+            "done": True,
+            "prompt_eval_count": 10,
+            "eval_count": 5,
+        }
+        mock_httpx_client.post.return_value = mock_response
+
+        client = OllamaClient()
+        client.client = mock_httpx_client
+
+        messages = [{"role": "user", "content": "Hi"}]
+        response = await client.chat(messages, model="qwen2.5", temperature=0.5)
+
+        assert response.content == "Hello from Ollama!"
+        assert response.model == "qwen2.5"
+        assert response.usage["prompt_tokens"] == 10
+        assert response.usage["completion_tokens"] == 5
+        assert response.usage["total_tokens"] == 15
+
+        mock_httpx_client.post.assert_called_once()
+        call_args = mock_httpx_client.post.call_args
+        assert call_args[0][0] == "/api/chat"
+        assert call_args[1]["json"]["model"] == "qwen2.5"
+        assert call_args[1]["json"]["stream"] is False
+        assert call_args[1]["json"]["options"]["temperature"] == 0.5
+
+    @pytest.mark.asyncio
+    async def test_chat_with_max_tokens(self, mock_httpx_client):
+        """Test chat with max_tokens parameter."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "message": {"role": "assistant", "content": "Short"},
+            "done": True,
+        }
+        mock_httpx_client.post.return_value = mock_response
+
+        client = OllamaClient()
+        client.client = mock_httpx_client
+
+        messages = [{"role": "user", "content": "Hi"}]
+        await client.chat(messages, max_tokens=100)
+
+        call_args = mock_httpx_client.post.call_args
+        assert call_args[1]["json"]["options"]["num_predict"] == 100
+
+    @pytest.mark.asyncio
+    async def test_chat_stream(self, mock_httpx_client):
+        """Test streaming chat completion."""
+        mock_response = MagicMock()
+
+        async def async_lines():
+            lines = [
+                '{"message": {"role": "assistant", "content": "Hello"}}',
+                '{"message": {"role": "assistant", "content": " from"}}',
+                '{"message": {"role": "assistant", "content": " Ollama"}}',
+            ]
+            for line in lines:
+                yield line
+
+        mock_response.aiter_lines = async_lines
+
+        stream_mock = MagicMock()
+        stream_mock.__aenter__ = AsyncMock(return_value=mock_response)
+        stream_mock.__aexit__ = AsyncMock(return_value=False)
+        mock_httpx_client.stream = MagicMock(return_value=stream_mock)
+
+        client = OllamaClient()
+        client.client = mock_httpx_client
+
+        messages = [{"role": "user", "content": "Hi"}]
+        chunks = []
+        async for chunk in client.chat_stream(messages):
+            chunks.append(chunk)
+
+        assert chunks == ["Hello", " from", " Ollama"]
+
+
 class TestLLMClient:
     """Tests for unified LLMClient."""
 
@@ -328,6 +449,19 @@ class TestLLMClient:
             },
         ):
             yield
+
+    def test_init_default_provider_is_ollama(self):
+        """Test that default provider is ollama."""
+        with patch("persona_agent.utils.llm_client.OllamaClient") as mock_ollama:
+            client = LLMClient()
+            assert client.provider == "ollama"
+            mock_ollama.assert_called_once_with(model=None)
+
+    def test_init_ollama(self):
+        """Test initialization with Ollama provider."""
+        with patch("persona_agent.utils.llm_client.OllamaClient") as mock_ollama:
+            LLMClient(provider="ollama", model="qwen2.5")
+            mock_ollama.assert_called_once_with(model="qwen2.5")
 
     def test_init_openai(self, mock_env_keys):
         """Test initialization with OpenAI provider."""

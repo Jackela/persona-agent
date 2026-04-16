@@ -266,10 +266,7 @@ Provide the complete Python code for the new skill."""
     def _format_success_patterns(self, metrics: SkillMetrics) -> str:
         """Format successful execution patterns."""
         # Get successful executions
-        successes = [
-            ex for ex in metrics.execution_history
-            if ex.success
-        ][-5:]
+        successes = [ex for ex in metrics.execution_history if ex.success][-5:]
 
         if not successes:
             return "  - No successful execution patterns recorded"

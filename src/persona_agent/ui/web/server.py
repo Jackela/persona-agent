@@ -532,9 +532,11 @@ async def list_sessions(
         SessionSummary(
             session_id=s["session_id"],
             message_count=s["message_count"],
-            last_activity=s["last_activity"].isoformat()
-            if hasattr(s["last_activity"], "isoformat")
-            else str(s["last_activity"]),
+            last_activity=(
+                s["last_activity"].isoformat()
+                if hasattr(s["last_activity"], "isoformat")
+                else str(s["last_activity"])
+            ),
         )
         for s in sessions
     ]
@@ -594,12 +596,16 @@ async def get_session(
             session_id=info["session_id"],
             persona_name=info["persona_name"],
             message_count=info["message_count"],
-            first_activity=info["first_activity"].isoformat()
-            if hasattr(info["first_activity"], "isoformat")
-            else str(info["first_activity"]),
-            last_activity=info["last_activity"].isoformat()
-            if hasattr(info["last_activity"], "isoformat")
-            else str(info["last_activity"]),
+            first_activity=(
+                info["first_activity"].isoformat()
+                if hasattr(info["first_activity"], "isoformat")
+                else str(info["first_activity"])
+            ),
+            last_activity=(
+                info["last_activity"].isoformat()
+                if hasattr(info["last_activity"], "isoformat")
+                else str(info["last_activity"])
+            ),
         )
     except ChatSessionNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e

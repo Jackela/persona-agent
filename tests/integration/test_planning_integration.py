@@ -298,6 +298,7 @@ class TestPlanningErrorHandling:
 
         # Detect cycles via get_task_order which raises CyclicDependencyError
         from persona_agent.core.planning.exceptions import CyclicDependencyError
+
         with pytest.raises(CyclicDependencyError) as exc_info:
             plan.get_task_order()
 

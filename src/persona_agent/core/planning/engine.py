@@ -38,27 +38,59 @@ class IntentClassifier:
     """Classifies user intent to determine if planning is needed."""
 
     # Keywords that suggest multi-step planning is beneficial
-    PLANNING_KEYWORDS = frozenset({
-        "plan", "steps", "how to", "guide me", "help me",
-        "create a", "build a", "research", "analyze",
-        "find out", "investigate", "compare", "evaluate",
-        "step by step", "walk me through", "process",
-        "workflow", "procedure", "method", "strategy",
-        "from scratch", "starting from", "begin with",
-        "first then", "after that", "finally",
-        "multiple", "several", "series of", "sequence",
-    })
+    PLANNING_KEYWORDS = frozenset(
+        {
+            "plan",
+            "steps",
+            "how to",
+            "guide me",
+            "help me",
+            "create a",
+            "build a",
+            "research",
+            "analyze",
+            "find out",
+            "investigate",
+            "compare",
+            "evaluate",
+            "step by step",
+            "walk me through",
+            "process",
+            "workflow",
+            "procedure",
+            "method",
+            "strategy",
+            "from scratch",
+            "starting from",
+            "begin with",
+            "first then",
+            "after that",
+            "finally",
+            "multiple",
+            "several",
+            "series of",
+            "sequence",
+        }
+    )
 
     # Patterns that indicate simple queries (no planning needed)
-    SIMPLE_PATTERNS = frozenset({
-        r"^hi\b", r"^hello\b", r"^hey\b",  # Greetings
-        r"^good morning\b", r"^good afternoon\b", r"^good evening\b",  # Time-based greetings
-        r"^what('s| is) your name",  # Identity questions
-        r"^how are you",  # Status questions
-        r"^thank", r"^thanks",  # Gratitude
-        r"^bye\b", r"^goodbye",  # Farewells
-        r"^[\?\.!]*$",  # Punctuation only
-    })
+    SIMPLE_PATTERNS = frozenset(
+        {
+            r"^hi\b",
+            r"^hello\b",
+            r"^hey\b",  # Greetings
+            r"^good morning\b",
+            r"^good afternoon\b",
+            r"^good evening\b",  # Time-based greetings
+            r"^what('s| is) your name",  # Identity questions
+            r"^how are you",  # Status questions
+            r"^thank",
+            r"^thanks",  # Gratitude
+            r"^bye\b",
+            r"^goodbye",  # Farewells
+            r"^[\?\.!]*$",  # Punctuation only
+        }
+    )
 
     def __init__(self, llm_client: LLMClientProtocol | None = None) -> None:
         self.llm_client = llm_client
@@ -120,7 +152,10 @@ Do not explain your reasoning."""
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f'Request: "{user_input}"\n\nDoes this require multiple steps?'},
+            {
+                "role": "user",
+                "content": f'Request: "{user_input}"\n\nDoes this require multiple steps?',
+            },
         ]
 
         try:
@@ -236,7 +271,7 @@ Requirements:
             logger.error(f"Failed to parse LLM response as JSON: {e}")
             raise PlanCreationError(
                 f"Failed to parse task decomposition: {e}",
-                details={"response": response.content if 'response' in locals() else None},
+                details={"response": response.content if "response" in locals() else None},
             ) from e
         except Exception as e:
             logger.exception("Task decomposition failed")
@@ -286,9 +321,7 @@ Requirements:
         for task in tasks:
             for dep_id in task.dependencies:
                 if dep_id not in task_ids:
-                    logger.warning(
-                        f"Task {task.id} has unresolved dependency: {dep_id}"
-                    )
+                    logger.warning(f"Task {task.id} has unresolved dependency: {dep_id}")
 
         return tasks
 

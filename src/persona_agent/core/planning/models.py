@@ -161,7 +161,9 @@ class Task:
         - It has no pending dependencies
         - It is in a pending or blocked state
         """
-        return self.status in {TaskStatus.PENDING, TaskStatus.BLOCKED} and len(self.dependencies) == 0
+        return (
+            self.status in {TaskStatus.PENDING, TaskStatus.BLOCKED} and len(self.dependencies) == 0
+        )
 
     @property
     def is_completed(self) -> bool:
@@ -189,18 +191,14 @@ class Task:
     def mark_started(self) -> None:
         """Mark task as started."""
         if not self.is_ready:
-            raise InvalidTaskStateError(
-                f"Cannot start task {self.id} in state {self.status}"
-            )
+            raise InvalidTaskStateError(f"Cannot start task {self.id} in state {self.status}")
         self.status = TaskStatus.IN_PROGRESS
         self.started_at = datetime.now(UTC)
 
     def mark_completed(self, result: TaskResult) -> None:
         """Mark task as completed."""
         if self.status != TaskStatus.IN_PROGRESS:
-            raise InvalidTaskStateError(
-                f"Cannot complete task {self.id} in state {self.status}"
-            )
+            raise InvalidTaskStateError(f"Cannot complete task {self.id} in state {self.status}")
         self.status = TaskStatus.COMPLETED
         self.result = result
         self.completed_at = datetime.now(UTC)

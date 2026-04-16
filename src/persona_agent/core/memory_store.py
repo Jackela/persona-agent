@@ -202,12 +202,16 @@ class MemoryStore:
                     timestamp=row["timestamp"],
                     user_message=self._encryptor.decrypt(row["user_message"]),
                     assistant_message=self._encryptor.decrypt(row["assistant_message"]),
-                    embedding=json.loads(self._encryptor.decrypt(row["embedding"]))
-                    if row["embedding"]
-                    else None,
-                    metadata=json.loads(self._encryptor.decrypt(row["metadata"]))
-                    if row["metadata"]
-                    else None,
+                    embedding=(
+                        json.loads(self._encryptor.decrypt(row["embedding"]))
+                        if row["embedding"]
+                        else None
+                    ),
+                    metadata=(
+                        json.loads(self._encryptor.decrypt(row["metadata"]))
+                        if row["metadata"]
+                        else None
+                    ),
                 )
             )
 
@@ -274,12 +278,16 @@ class MemoryStore:
                 timestamp=row["timestamp"],
                 user_message=self._encryptor.decrypt(row["user_message"]),
                 assistant_message=self._encryptor.decrypt(row["assistant_message"]),
-                embedding=json.loads(self._encryptor.decrypt(row["embedding"]))
-                if row["embedding"]
-                else None,
-                metadata=json.loads(self._encryptor.decrypt(row["metadata"]))
-                if row["metadata"]
-                else None,
+                embedding=(
+                    json.loads(self._encryptor.decrypt(row["embedding"]))
+                    if row["embedding"]
+                    else None
+                ),
+                metadata=(
+                    json.loads(self._encryptor.decrypt(row["metadata"]))
+                    if row["metadata"]
+                    else None
+                ),
             )
             for _, row in top_rows
         ]
@@ -305,9 +313,11 @@ class MemoryStore:
             return UserModel(
                 user_id=row["user_id"],
                 traits=json.loads(self._encryptor.decrypt(row["traits"])) if row["traits"] else {},
-                preferences=json.loads(self._encryptor.decrypt(row["preferences"]))
-                if row["preferences"]
-                else {},
+                preferences=(
+                    json.loads(self._encryptor.decrypt(row["preferences"]))
+                    if row["preferences"]
+                    else {}
+                ),
                 relationship_stage=row["relationship_stage"] or "initial",
                 interaction_patterns=(
                     json.loads(self._encryptor.decrypt(row["interaction_patterns"]))
@@ -425,9 +435,11 @@ class MemoryStore:
         return [
             {
                 "summary": self._encryptor.decrypt(row["summary"]),
-                "key_points": json.loads(self._encryptor.decrypt(row["key_points"]))
-                if row["key_points"]
-                else [],
+                "key_points": (
+                    json.loads(self._encryptor.decrypt(row["key_points"]))
+                    if row["key_points"]
+                    else []
+                ),
                 "timestamp": row["timestamp"],
             }
             for row in reversed(rows)

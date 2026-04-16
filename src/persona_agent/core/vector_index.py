@@ -135,13 +135,15 @@ class VectorMemoryIndex:
                 ids=[memory_id],
                 embeddings=[embedding],
                 documents=[text],
-                metadatas=[{
-                    "session_id": session_id,
-                    "timestamp": timestamp,
-                    "user_message": user_message[:500],  # Truncate for metadata
-                    "assistant_message": assistant_message[:500],
-                    **(metadata or {}),
-                }],
+                metadatas=[
+                    {
+                        "session_id": session_id,
+                        "timestamp": timestamp,
+                        "user_message": user_message[:500],  # Truncate for metadata
+                        "assistant_message": assistant_message[:500],
+                        **(metadata or {}),
+                    }
+                ],
             )
             return True
 
@@ -200,14 +202,16 @@ class VectorMemoryIndex:
 
                     if similarity >= min_similarity:
                         metadata = results["metadatas"][0][i] if results["metadatas"] else {}
-                        memories.append({
-                            "id": memory_id,
-                            "similarity": similarity,
-                            "session_id": metadata.get("session_id"),
-                            "timestamp": metadata.get("timestamp"),
-                            "user_message": metadata.get("user_message"),
-                            "assistant_message": metadata.get("assistant_message"),
-                        })
+                        memories.append(
+                            {
+                                "id": memory_id,
+                                "similarity": similarity,
+                                "session_id": metadata.get("session_id"),
+                                "timestamp": metadata.get("timestamp"),
+                                "user_message": metadata.get("user_message"),
+                                "assistant_message": metadata.get("assistant_message"),
+                            }
+                        )
 
             # Sort by similarity and limit
             memories.sort(key=lambda x: x["similarity"], reverse=True)
@@ -319,17 +323,41 @@ class SimpleEmbeddingProvider:
         """
         # Common keywords for basic matching
         keywords = [
-            "name", "like", "love", "hate", "work", "job", "family",
-            "friend", "home", "live", "want", "need", "feel", "think",
-            "know", "learn", "study", "play", "game", "movie", "book",
-            "food", "eat", "drink", "travel", "visit", "plan", "goal",
+            "name",
+            "like",
+            "love",
+            "hate",
+            "work",
+            "job",
+            "family",
+            "friend",
+            "home",
+            "live",
+            "want",
+            "need",
+            "feel",
+            "think",
+            "know",
+            "learn",
+            "study",
+            "play",
+            "game",
+            "movie",
+            "book",
+            "food",
+            "eat",
+            "drink",
+            "travel",
+            "visit",
+            "plan",
+            "goal",
         ]
 
         text_lower = text.lower()
         embedding = [1.0 if kw in text_lower else 0.0 for kw in keywords]
 
         # Normalize
-        magnitude = sum(x ** 2 for x in embedding) ** 0.5
+        magnitude = sum(x**2 for x in embedding) ** 0.5
         if magnitude > 0:
             embedding = [x / magnitude for x in embedding]
 

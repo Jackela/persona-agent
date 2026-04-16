@@ -122,7 +122,10 @@ The summary should be written in third person and focus on factual content."""
 
             response = await self.llm_client.chat(
                 messages=[
-                    {"role": "system", "content": "You are a precise memory summarization assistant."},
+                    {
+                        "role": "system",
+                        "content": "You are a precise memory summarization assistant.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.3,
@@ -135,7 +138,7 @@ The summary should be written in third person and focus on factual content."""
             raise SummarizationError(
                 f"Failed to summarize {len(memories)} memories: {e}",
                 memory_count=len(memories),
-                prompt_length=len(prompt) if 'prompt' in locals() else 0,
+                prompt_length=len(prompt) if "prompt" in locals() else 0,
             )
 
     def _build_prompt(self, memories: list[EpisodicEntry]) -> str:
@@ -188,11 +191,13 @@ The summary should be written in third person and focus on factual content."""
             metadata = SummaryMetadata(
                 original_count=len(memories),
                 source_date_range=(
-                    sorted_memories[0].timestamp.isoformat(),
-                    sorted_memories[-1].timestamp.isoformat(),
-                )
-                if len(sorted_memories) >= 2
-                else None,
+                    (
+                        sorted_memories[0].timestamp.isoformat(),
+                        sorted_memories[-1].timestamp.isoformat(),
+                    )
+                    if len(sorted_memories) >= 2
+                    else None
+                ),
                 key_entities=data.get("key_entities", []),
                 key_themes=data.get("key_themes", []),
                 confidence=data.get("confidence", 0.5),
@@ -249,11 +254,13 @@ The summary should be written in third person and focus on factual content."""
         metadata = SummaryMetadata(
             original_count=len(memories),
             source_date_range=(
-                sorted_memories[0].timestamp.isoformat(),
-                sorted_memories[-1].timestamp.isoformat(),
-            )
-            if len(sorted_memories) >= 2
-            else None,
+                (
+                    sorted_memories[0].timestamp.isoformat(),
+                    sorted_memories[-1].timestamp.isoformat(),
+                )
+                if len(sorted_memories) >= 2
+                else None
+            ),
             key_entities=list(all_entities)[:10],
             confidence=0.5,
         )

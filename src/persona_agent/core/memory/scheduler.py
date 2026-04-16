@@ -105,8 +105,7 @@ class AutoCompactionScheduler:
         self._task = asyncio.create_task(self._run_scheduler())
 
         logger.info(
-            f"AutoCompactionScheduler started "
-            f"(interval: {self.config.check_interval_hours}h)"
+            f"AutoCompactionScheduler started " f"(interval: {self.config.check_interval_hours}h)"
         )
 
     async def stop(self) -> None:

@@ -356,19 +356,19 @@ class MemoryStoreV2(MemoryStore):
             timestamp=row["timestamp"],
             user_message=self._encryptor.decrypt(row["user_message"]),
             assistant_message=self._encryptor.decrypt(row["assistant_message"]),
-            embedding=json.loads(self._encryptor.decrypt(row["embedding"]))
-            if row["embedding"]
-            else None,
-            metadata=json.loads(self._encryptor.decrypt(row["metadata"]))
-            if row["metadata"]
-            else None,
+            embedding=(
+                json.loads(self._encryptor.decrypt(row["embedding"])) if row["embedding"] else None
+            ),
+            metadata=(
+                json.loads(self._encryptor.decrypt(row["metadata"])) if row["metadata"] else None
+            ),
             importance_score=row.get("importance_score", 3),
             importance_level=row.get("importance_level", "MEDIUM"),
             importance_reasoning=self._encryptor.decrypt(row.get("importance_reasoning")) or "",
             is_compressed=bool(row.get("is_compressed", 0)),
-            compressed_from=json.loads(row["compressed_from"])
-            if row.get("compressed_from")
-            else None,
+            compressed_from=(
+                json.loads(row["compressed_from"]) if row.get("compressed_from") else None
+            ),
             compression_summary=self._encryptor.decrypt(row.get("compression_summary")),
         )
 
@@ -545,13 +545,11 @@ class MemoryStoreV2(MemoryStore):
                 cursor = conn.execute("SELECT COUNT(*) FROM conversations WHERE is_compressed = 1")
                 compressed = cursor.fetchone()[0]
 
-                cursor = conn.execute(
-                    """
+                cursor = conn.execute("""
                     SELECT importance_level, COUNT(*) as count
                     FROM conversations
                     GROUP BY importance_level
-                    """
-                )
+                    """)
                 importance_dist = {
                     row["importance_level"]: row["count"] for row in cursor.fetchall()
                 }

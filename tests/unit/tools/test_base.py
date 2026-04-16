@@ -1,6 +1,5 @@
 """Tests for tool base classes."""
 
-
 import pytest
 
 from persona_agent.tools.base import (
@@ -60,9 +59,7 @@ class TestToolSchema:
         schema = ToolSchema(
             name="test_tool",
             description="A test tool",
-            parameters={
-                "input": {"type": "string", "description": "Input value"}
-            },
+            parameters={"input": {"type": "string", "description": "Input value"}},
             required=["input"],
             category=ToolCategory.READ_ONLY,
             risk_level=ToolRiskLevel.LOW,
@@ -82,9 +79,7 @@ class TestToolSchema:
         schema = ToolSchema(
             name="test_tool",
             description="A test tool",
-            parameters={
-                "input": {"type": "string", "description": "Input value"}
-            },
+            parameters={"input": {"type": "string", "description": "Input value"}},
             required=["input"],
             category=ToolCategory.READ_ONLY,
             risk_level=ToolRiskLevel.LOW,
@@ -102,9 +97,7 @@ class TestToolSchema:
         schema = ToolSchema(
             name="test_tool",
             description="A test tool",
-            parameters={
-                "input": {"type": "string", "description": "Input value"}
-            },
+            parameters={"input": {"type": "string", "description": "Input value"}},
             required=["input"],
             category=ToolCategory.READ_ONLY,
             risk_level=ToolRiskLevel.LOW,

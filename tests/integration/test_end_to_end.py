@@ -34,7 +34,9 @@ def mock_llm_for_e2e():
         # Intent classification
         if "classify" in content.lower():
             # Complex tasks get planning, simple ones don't
-            if any(word in content.lower() for word in ["research", "plan", "multi-step", "complex"]):
+            if any(
+                word in content.lower() for word in ["research", "plan", "multi-step", "complex"]
+            ):
                 return LLMResponse(
                     content='{"should_plan": true, "confidence": 0.95}',
                     model="test",
@@ -216,9 +218,7 @@ class TestEndToEndChatWorkflow:
 class TestEndToEndPlanningWorkflow:
     """End-to-end tests for planning workflows."""
 
-    async def test_plan_creation_and_execution(
-        self, mock_llm_for_e2e
-    ):
+    async def test_plan_creation_and_execution(self, mock_llm_for_e2e):
         """Test complete plan creation and execution flow."""
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
@@ -242,9 +242,7 @@ class TestEndToEndPlanningWorkflow:
         assert results["plan_id"] == plan.id
         assert "status" in results
 
-    async def test_plan_with_progress_callback(
-        self, mock_llm_for_e2e
-    ):
+    async def test_plan_with_progress_callback(self, mock_llm_for_e2e):
         """Test plan execution with progress tracking."""
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
@@ -259,11 +257,13 @@ class TestEndToEndPlanningWorkflow:
         progress_updates = []
 
         def on_progress(plan_id, task_id, percentage):
-            progress_updates.append({
-                "plan_id": plan_id,
-                "task_id": task_id,
-                "percentage": percentage,
-            })
+            progress_updates.append(
+                {
+                    "plan_id": plan_id,
+                    "task_id": task_id,
+                    "percentage": percentage,
+                }
+            )
 
         _ = await engine.plan_executor.execute_plan(
             plan,
@@ -279,9 +279,7 @@ class TestEndToEndPlanningWorkflow:
 class TestEndToEndMemoryWorkflow:
     """End-to-end tests for memory workflows."""
 
-    async def test_memory_compaction_flow(
-        self, tmp_path
-    ):
+    async def test_memory_compaction_flow(self, tmp_path):
         """Test complete memory compaction workflow."""
         from persona_agent.core.memory.compaction import MemoryCompactor
         from persona_agent.core.memory.summarizer import MemorySummarizer
@@ -291,6 +289,7 @@ class TestEndToEndMemoryWorkflow:
 
         # Add old memories
         from datetime import timedelta
+
         for i in range(10):
             memory.episodic.add_episode(
                 content=f"Old conversation about Python - part {i}",
@@ -300,9 +299,7 @@ class TestEndToEndMemoryWorkflow:
 
         # Create compactor with mock summarizer
         summarizer = Mock(spec=MemorySummarizer)
-        summarizer.summarize_memories = AsyncMock(
-            return_value="Summary of Python conversations"
-        )
+        summarizer.summarize_memories = AsyncMock(return_value="Summary of Python conversations")
 
         compactor = MemoryCompactor(memory.episodic, summarizer=summarizer)
 
@@ -312,9 +309,7 @@ class TestEndToEndMemoryWorkflow:
         assert result.compacted_count == 10
         assert result.summaries_created == 1
 
-    async def test_auto_compaction_scheduler(
-        self, tmp_path
-    ):
+    async def test_auto_compaction_scheduler(self, tmp_path):
         """Test auto-compaction scheduler."""
         from persona_agent.core.memory.compaction import MemoryCompactor
         from persona_agent.core.memory.scheduler import AutoCompactionScheduler
@@ -336,9 +331,7 @@ class TestEndToEndMemoryWorkflow:
 class TestEndToEndSkillEvolutionWorkflow:
     """End-to-end tests for skill evolution workflows."""
 
-    async def test_skill_performance_tracking(
-        self, tmp_path
-    ):
+    async def test_skill_performance_tracking(self, tmp_path):
         """Test tracking skill performance over time."""
         config = EvolutionConfig(
             storage_path=str(tmp_path / "evolution"),
@@ -371,9 +364,7 @@ class TestEndToEndSkillEvolutionWorkflow:
         assert metrics.total_executions == 5
         assert metrics.success_rate == 0.6  # 3 successes out of 5
 
-    async def test_evolution_proposal_workflow(
-        self, tmp_path
-    ):
+    async def test_evolution_proposal_workflow(self, tmp_path):
         """Test complete evolution proposal workflow."""
         from persona_agent.skills.evolution import (
             EvolutionManager,
@@ -432,9 +423,7 @@ class TestEndToEndSkillEvolutionWorkflow:
 class TestEndToEndErrorHandling:
     """End-to-end tests for error handling scenarios."""
 
-    async def test_graceful_degradation_on_llm_failure(
-        self, temp_config_dir, test_characters
-    ):
+    async def test_graceful_degradation_on_llm_failure(self, temp_config_dir, test_characters):
         """Test graceful degradation when LLM fails."""
         failing_llm = Mock(spec=LLMClient)
         failing_llm.chat = AsyncMock(side_effect=Exception("LLM Error"))

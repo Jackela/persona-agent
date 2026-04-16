@@ -44,32 +44,60 @@ class SandboxConfig:
     def __post_init__(self):
         if self.allowed_modules is None:
             self.allowed_modules = [
-                "math", "random", "statistics", "datetime", "itertools",
-                "collections", "functools", "operator", "json", "re",
-                "string", "hashlib", "base64", "typing", "decimal",
-                "fractions", "numbers", "inspect", "types", "copy",
+                "math",
+                "random",
+                "statistics",
+                "datetime",
+                "itertools",
+                "collections",
+                "functools",
+                "operator",
+                "json",
+                "re",
+                "string",
+                "hashlib",
+                "base64",
+                "typing",
+                "decimal",
+                "fractions",
+                "numbers",
+                "inspect",
+                "types",
+                "copy",
             ]
 
         if self.blocked_builtins is None:
             self.blocked_builtins = [
-                "__import__", "eval", "exec", "compile", "open",
-                "input", "raw_input", "exit", "quit", "help",
-                "reload", "breakpoint",
+                "__import__",
+                "eval",
+                "exec",
+                "compile",
+                "open",
+                "input",
+                "raw_input",
+                "exit",
+                "quit",
+                "help",
+                "reload",
+                "breakpoint",
             ]
 
 
 class SecurityError(Exception):
     """Raised when security policy is violated."""
+
     pass
 
 
 class TimeoutError(Exception):
     """Raised when execution times out."""
+
     pass
 
 
 class MemoryLimitError(Exception):
     """Raised when memory limit is exceeded."""
+
     pass
 
 
@@ -153,7 +181,7 @@ class RestrictedPythonExecutor:
 
         def restricted_import(name, *args, **kwargs):
             # Get the top-level module name
-            module_name = name.split('.')[0]
+            module_name = name.split(".")[0]
             if module_name not in allowed_modules:
                 raise ImportError(f"Import of '{module_name}' not allowed")
             return __import__(name, *args, **kwargs)
@@ -187,7 +215,7 @@ class RestrictedPythonExecutor:
                 elif isinstance(node, ast.Import):
                     # Check all names in the import
                     for alias in node.names:
-                        module_name = alias.name.split('.')[0]  # Get top-level module
+                        module_name = alias.name.split(".")[0]  # Get top-level module
                         if module_name not in allowed_modules:
                             return False, f"Import of '{module_name}' not allowed"
                 else:
@@ -234,6 +262,7 @@ class RestrictedPythonExecutor:
 
             # Capture output
             import io
+
             stdout = io.StringIO()
             stderr = io.StringIO()
 
@@ -323,7 +352,7 @@ class ProcessSandbox:
             '    "sorted", "str", "sum", "tuple", "type", "vars", "zip",',
             "]",
             "for name in safe_builtins:",
-            '    if name in __builtins__:',
+            "    if name in __builtins__:",
             '        globals_dict["__builtins__"][name] = __builtins__[name]',
             "",
             "# Add allowed modules",
@@ -377,8 +406,14 @@ class ProcessSandbox:
         """Execute bash command with restrictions."""
         # Block dangerous commands
         dangerous_patterns = [
-            "rm -rf /", "rm -rf /*", ":(){ :|:& };:", "> /dev/sda",
-            "mkfs", "dd if=/dev/zero", "curl | sh", "wget | sh",
+            "rm -rf /",
+            "rm -rf /*",
+            ":(){ :|:& };:",
+            "> /dev/sda",
+            "mkfs",
+            "dd if=/dev/zero",
+            "curl | sh",
+            "wget | sh",
         ]
 
         for pattern in dangerous_patterns:

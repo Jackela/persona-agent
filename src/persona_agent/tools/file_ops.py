@@ -32,21 +32,56 @@ class FileReadTool(Tool):
     DEFAULT_MAX_SIZE = 1024 * 1024  # 1MB default limit
     ALLOWED_EXTENSIONS = {
         # Text files
-        ".txt", ".md", ".json", ".yaml", ".yml", ".xml", ".csv",
+        ".txt",
+        ".md",
+        ".json",
+        ".yaml",
+        ".yml",
+        ".xml",
+        ".csv",
         # Code files
-        ".py", ".js", ".ts", ".jsx", ".tsx", ".html", ".css",
-        ".java", ".c", ".cpp", ".h", ".go", ".rs", ".rb", ".php",
-        ".sh", ".bash", ".zsh", ".ps1", ".bat",
+        ".py",
+        ".js",
+        ".ts",
+        ".jsx",
+        ".tsx",
+        ".html",
+        ".css",
+        ".java",
+        ".c",
+        ".cpp",
+        ".h",
+        ".go",
+        ".rs",
+        ".rb",
+        ".php",
+        ".sh",
+        ".bash",
+        ".zsh",
+        ".ps1",
+        ".bat",
         # Config files
-        ".conf", ".cfg", ".ini", ".toml", ".properties",
+        ".conf",
+        ".cfg",
+        ".ini",
+        ".toml",
+        ".properties",
         # Data files
-        ".sql", ".log", ".svg",
+        ".sql",
+        ".log",
+        ".svg",
     }
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
-        self.max_size = config.get("max_size", self.DEFAULT_MAX_SIZE) if config else self.DEFAULT_MAX_SIZE
-        self.allowed_extensions = set(config.get("allowed_extensions", self.ALLOWED_EXTENSIONS)) if config else self.ALLOWED_EXTENSIONS
+        self.max_size = (
+            config.get("max_size", self.DEFAULT_MAX_SIZE) if config else self.DEFAULT_MAX_SIZE
+        )
+        self.allowed_extensions = (
+            set(config.get("allowed_extensions", self.ALLOWED_EXTENSIONS))
+            if config
+            else self.ALLOWED_EXTENSIONS
+        )
 
     def get_schema(self) -> ToolSchema:
         return ToolSchema(
@@ -187,7 +222,9 @@ class FileWriteTool(Tool):
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
-        self.max_size = config.get("max_size", self.DEFAULT_MAX_SIZE) if config else self.DEFAULT_MAX_SIZE
+        self.max_size = (
+            config.get("max_size", self.DEFAULT_MAX_SIZE) if config else self.DEFAULT_MAX_SIZE
+        )
         self.create_backup = config.get("create_backup", True) if config else True
 
     def get_schema(self) -> ToolSchema:
@@ -357,33 +394,41 @@ class FileListTool(Tool):
                 for item in resolved_path.rglob(pattern):
                     if item.is_file():
                         stat = item.stat()
-                        entries.append({
-                            "name": item.name,
-                            "path": str(item.relative_to(resolved_path)),
-                            "type": "file",
-                            "size": stat.st_size,
-                        })
+                        entries.append(
+                            {
+                                "name": item.name,
+                                "path": str(item.relative_to(resolved_path)),
+                                "type": "file",
+                                "size": stat.st_size,
+                            }
+                        )
                     elif item.is_dir():
-                        entries.append({
-                            "name": item.name,
-                            "path": str(item.relative_to(resolved_path)),
-                            "type": "directory",
-                        })
+                        entries.append(
+                            {
+                                "name": item.name,
+                                "path": str(item.relative_to(resolved_path)),
+                                "type": "directory",
+                            }
+                        )
             else:
                 for item in resolved_path.iterdir():
                     if item.match(pattern) or pattern == "*":
                         if item.is_file():
                             stat = item.stat()
-                            entries.append({
-                                "name": item.name,
-                                "type": "file",
-                                "size": stat.st_size,
-                            })
+                            entries.append(
+                                {
+                                    "name": item.name,
+                                    "type": "file",
+                                    "size": stat.st_size,
+                                }
+                            )
                         elif item.is_dir():
-                            entries.append({
-                                "name": item.name,
-                                "type": "directory",
-                            })
+                            entries.append(
+                                {
+                                    "name": item.name,
+                                    "type": "directory",
+                                }
+                            )
 
             # Sort: directories first, then files alphabetically
             entries.sort(key=lambda x: (0 if x["type"] == "directory" else 1, x["name"]))

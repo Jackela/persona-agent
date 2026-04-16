@@ -17,20 +17,20 @@ from typing import Any
 class ToolCategory(Enum):
     """Categories of tools based on their function and risk level."""
 
-    READ_ONLY = auto()      # Safe, read-only operations
-    FILE_SYSTEM = auto()    # File read/write operations
-    NETWORK = auto()        # Network/API operations
-    CODE_EXECUTION = auto() # Code execution (high risk)
-    SYSTEM = auto()         # System-level operations (highest risk)
+    READ_ONLY = auto()  # Safe, read-only operations
+    FILE_SYSTEM = auto()  # File read/write operations
+    NETWORK = auto()  # Network/API operations
+    CODE_EXECUTION = auto()  # Code execution (high risk)
+    SYSTEM = auto()  # System-level operations (highest risk)
 
 
 class ToolRiskLevel(Enum):
     """Risk levels for tool execution."""
 
-    LOW = "low"           # Read-only, no side effects
-    MEDIUM = "medium"     # Local changes, limited scope
-    HIGH = "high"         # External calls, persistent changes
-    CRITICAL = "critical" # Code execution, system access
+    LOW = "low"  # Read-only, no side effects
+    MEDIUM = "medium"  # Local changes, limited scope
+    HIGH = "high"  # External calls, persistent changes
+    CRITICAL = "critical"  # Code execution, system access
 
 
 @dataclass
@@ -396,12 +396,14 @@ def tool(
         async def greet_tool(context: ToolContext, name: str) -> ToolResult:
             return ToolResult.success_result(f"Hello, {name}!")
     """
+
     def decorator(func: Callable) -> Callable:
         class FunctionTool(Tool):
             _func = staticmethod(func)
 
             def get_schema(self) -> ToolSchema:
                 import inspect
+
                 sig = inspect.signature(func)
 
                 # Build parameters from function signature

@@ -251,9 +251,7 @@ class TestToolDiscovery:
 
     def test_discover_from_module(self, discovery):
         """Test discovering tools from a module."""
-        discovered = discovery.registry.discover_from_module(
-            "tests.unit.tools.test_discovery"
-        )
+        discovered = discovery.registry.discover_from_module("tests.unit.tools.test_discovery")
 
         # Should find MockTool and MockHighRiskTool
         tool_names = [d.name for d in discovered]

@@ -67,9 +67,7 @@ class TaskExecutor:
             TaskExecutionError: If execution fails
         """
         if not self.agent_engine:
-            return TaskResult.failure_result(
-                error="No agent engine available for task execution"
-            )
+            return TaskResult.failure_result(error="No agent engine available for task execution")
 
         # Build task context
         context = self._build_task_context(task, plan)
@@ -127,10 +125,12 @@ class TaskExecutor:
             lines.extend(["", "Previous results:"])
             lines.extend(completed_results)
 
-        lines.extend([
-            "",
-            "Execute this task and provide the result.",
-        ])
+        lines.extend(
+            [
+                "",
+                "Execute this task and provide the result.",
+            ]
+        )
 
         return "\n".join(lines)
 
@@ -367,9 +367,7 @@ class PlanExecutor:
 
             else:
                 # Handle failure
-                await self._handle_task_failure(
-                    plan, task, task_result, results, on_task_fail
-                )
+                await self._handle_task_failure(plan, task, task_result, results, on_task_fail)
 
         except TaskExecutionError as e:
             await self._handle_task_failure(
@@ -396,6 +394,7 @@ class PlanExecutor:
         on_task_fail: TaskCallback | None,
     ) -> None:
         """Execute multiple tasks in parallel."""
+
         # Create tasks for parallel execution
         async def execute_and_track(task: Task) -> None:
             await self._execute_task(

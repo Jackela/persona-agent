@@ -288,12 +288,13 @@ async def list_sessions(
 @limiter.limit("30/minute")
 async def create_session(
     request: Request,
-    body: CreateSessionRequest,
+    body: CreateSessionRequest | None = None,
     api_key: str = Depends(verify_api_key),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> dict[str, str]:
     try:
-        session_id = await chat_service.create_new_session(persona_name=body.persona_name)
+        persona_name = body.persona_name if body else None
+        session_id = await chat_service.create_new_session(persona_name=persona_name)
         return {"session_id": session_id}
     except ChatPersonaNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e

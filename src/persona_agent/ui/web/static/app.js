@@ -338,7 +338,7 @@
             try {
                 const res = await fetch('/api/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY } });
                 const data = await res.json();
-                const id = data.id || String(Date.now());
+                const id = data.session_id || data.id || String(Date.now());
                 currentSessionId = id;
                 document.querySelectorAll('.chat-session-item').forEach((i) => i.classList.remove('active'));
                 const item = createSessionItem(id, '新会话 ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }), '刚刚');

@@ -275,25 +275,26 @@ class TestMemoryCompactor:
         """Test memory grouping by time window."""
         from persona_agent.core.hierarchical_memory import EpisodicEntry
 
-        now = datetime.now(timezone.utc)
+        window1 = datetime(2024, 1, 1, tzinfo=timezone.utc)
+        window2 = datetime(2024, 1, 8, tzinfo=timezone.utc)
 
         memories = [
             EpisodicEntry(
                 id="m1",
                 content="Memory 1",
-                timestamp=now - timedelta(days=10),
+                timestamp=window1,
                 importance=0.5,
             ),
             EpisodicEntry(
                 id="m2",
                 content="Memory 2",
-                timestamp=now - timedelta(days=10),
+                timestamp=window1,
                 importance=0.5,
             ),
             EpisodicEntry(
                 id="m3",
                 content="Memory 3",
-                timestamp=now - timedelta(days=5),
+                timestamp=window2,
                 importance=0.5,
             ),
         ]

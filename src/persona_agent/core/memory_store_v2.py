@@ -171,9 +171,7 @@ class MemoryStoreV2(MemoryStore):
 
         if self.importance_scorer:
             try:
-                score = await self.importance_scorer.score_memory(
-                    user_message, assistant_message
-                )
+                score = await self.importance_scorer.score_memory(user_message, assistant_message)
                 importance_data = {
                     "score": score.score,
                     "level": score.level.name,
@@ -194,13 +192,13 @@ class MemoryStoreV2(MemoryStore):
                 (
                     session_id,
                     timestamp,
-                    user_message,
-                    assistant_message,
-                    json.dumps(embedding) if embedding else None,
-                    json.dumps(metadata) if metadata else None,
+                    self._encryptor.encrypt(user_message),
+                    self._encryptor.encrypt(assistant_message),
+                    self._encryptor.encrypt(json.dumps(embedding)) if embedding else None,
+                    self._encryptor.encrypt(json.dumps(metadata)) if metadata else None,
                     importance_data["score"],
                     importance_data["level"],
-                    importance_data["reasoning"],
+                    self._encryptor.encrypt(importance_data["reasoning"]),
                     False,
                 ),
             )
@@ -221,7 +219,9 @@ class MemoryStoreV2(MemoryStore):
             except Exception as e:
                 logger.warning(f"Vector index update failed: {e}")
 
-        logger.debug(f"Stored memory for session {session_id} with importance {importance_data['score']}")
+        logger.debug(
+            f"Stored memory for session {session_id} with importance {importance_data['score']}"
+        )
         return memory_id
 
     async def retrieve_relevant(
@@ -261,16 +261,13 @@ class MemoryStoreV2(MemoryStore):
                     # Sort by vector similarity (results are already sorted)
                     id_to_memory = {m.id: m for m in memories}
                     sorted_memories = [
-                        id_to_memory[r["id"]]
-                        for r in results
-                        if r["id"] in id_to_memory
+                        id_to_memory[r["id"]] for r in results if r["id"] in id_to_memory
                     ]
 
                     # Filter by importance if specified
                     if min_importance:
                         sorted_memories = [
-                            m for m in sorted_memories
-                            if m.importance_score >= min_importance
+                            m for m in sorted_memories if m.importance_score >= min_importance
                         ]
 
                     return sorted_memories[:limit]
@@ -339,7 +336,9 @@ class MemoryStoreV2(MemoryStore):
         # Score by keyword matches
         scored = []
         for row in rows:
-            content = f"{row['user_message']} {row['assistant_message']}".lower()
+            user_msg = self._encryptor.decrypt(row["user_message"]) or ""
+            assistant_msg = self._encryptor.decrypt(row["assistant_message"]) or ""
+            content = f"{user_msg} {assistant_msg}".lower()
             score = sum(1 for kw in keywords if kw in content)
             if score > 0:
                 scored.append((score, row))
@@ -355,16 +354,22 @@ class MemoryStoreV2(MemoryStore):
             id=str(row["id"]),
             session_id=row["session_id"],
             timestamp=row["timestamp"],
-            user_message=row["user_message"],
-            assistant_message=row["assistant_message"],
-            embedding=json.loads(row["embedding"]) if row["embedding"] else None,
-            metadata=json.loads(row["metadata"]) if row["metadata"] else None,
+            user_message=self._encryptor.decrypt(row["user_message"]),
+            assistant_message=self._encryptor.decrypt(row["assistant_message"]),
+            embedding=json.loads(self._encryptor.decrypt(row["embedding"]))
+            if row["embedding"]
+            else None,
+            metadata=json.loads(self._encryptor.decrypt(row["metadata"]))
+            if row["metadata"]
+            else None,
             importance_score=row.get("importance_score", 3),
             importance_level=row.get("importance_level", "MEDIUM"),
-            importance_reasoning=row.get("importance_reasoning", ""),
+            importance_reasoning=self._encryptor.decrypt(row.get("importance_reasoning")) or "",
             is_compressed=bool(row.get("is_compressed", 0)),
-            compressed_from=json.loads(row["compressed_from"]) if row.get("compressed_from") else None,
-            compression_summary=row.get("compression_summary"),
+            compressed_from=json.loads(row["compressed_from"])
+            if row.get("compressed_from")
+            else None,
+            compression_summary=self._encryptor.decrypt(row.get("compression_summary")),
         )
 
     async def compress_session_memories(
@@ -405,16 +410,19 @@ class MemoryStoreV2(MemoryStore):
         importance_scores = []
 
         for row in rows:
-            memories.append({
-                "id": row["id"],
-                "user_message": row["user_message"],
-                "assistant_message": row["assistant_message"],
-                "timestamp": row["timestamp"],
-                "importance_score": row.get("importance_score", 3),
-            })
+            memories.append(
+                {
+                    "id": row["id"],
+                    "user_message": self._encryptor.decrypt(row["user_message"]) or "",
+                    "assistant_message": self._encryptor.decrypt(row["assistant_message"]) or "",
+                    "timestamp": row["timestamp"],
+                    "importance_score": row.get("importance_score", 3),
+                }
+            )
 
             if self.importance_scorer:
                 from persona_agent.core.importance_scorer import ImportanceLevel
+
                 score_val = row.get("importance_score", 3)
                 importance_scores.append(
                     ImportanceLevel(score_val) if 1 <= score_val <= 5 else ImportanceLevel.MEDIUM
@@ -448,15 +456,15 @@ class MemoryStoreV2(MemoryStore):
                     """,
                     (
                         session_id,
-                        compressed.summary,
-                        json.dumps(compressed.key_facts),
+                        self._encryptor.encrypt(compressed.summary),
+                        self._encryptor.encrypt(json.dumps(compressed.key_facts)),
                         json.dumps(compressed.original_ids),
                         compressed.importance_range[0],
                         compressed.importance_range[1],
                         compressed.timestamp_range[0],
                         compressed.timestamp_range[1],
                         compressed.compression_ratio,
-                        json.dumps(compressed.metadata),
+                        self._encryptor.encrypt(json.dumps(compressed.metadata)),
                         time.time(),
                     ),
                 )
@@ -473,7 +481,7 @@ class MemoryStoreV2(MemoryStore):
                         """,
                         (
                             json.dumps(compressed.original_ids),
-                            compressed.summary[:500],
+                            self._encryptor.encrypt(compressed.summary[:500]),
                             original_id,
                         ),
                     )
@@ -527,14 +535,14 @@ class MemoryStoreV2(MemoryStore):
                     """,
                     (session_id,),
                 )
-                importance_dist = {row["importance_level"]: row["count"] for row in cursor.fetchall()}
+                importance_dist = {
+                    row["importance_level"]: row["count"] for row in cursor.fetchall()
+                }
             else:
                 cursor = conn.execute("SELECT COUNT(*) FROM conversations")
                 total = cursor.fetchone()[0]
 
-                cursor = conn.execute(
-                    "SELECT COUNT(*) FROM conversations WHERE is_compressed = 1"
-                )
+                cursor = conn.execute("SELECT COUNT(*) FROM conversations WHERE is_compressed = 1")
                 compressed = cursor.fetchone()[0]
 
                 cursor = conn.execute(
@@ -544,7 +552,9 @@ class MemoryStoreV2(MemoryStore):
                     GROUP BY importance_level
                     """
                 )
-                importance_dist = {row["importance_level"]: row["count"] for row in cursor.fetchall()}
+                importance_dist = {
+                    row["importance_level"]: row["count"] for row in cursor.fetchall()
+                }
 
         # Vector index stats
         vector_stats = {}

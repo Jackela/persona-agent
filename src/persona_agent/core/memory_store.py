@@ -14,11 +14,14 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sqlite3
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from persona_agent.core.db_encryption import FernetColumnEncryptor
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +67,7 @@ class MemoryStore:
         """
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._encryptor = FernetColumnEncryptor(os.environ.get("PERSONA_AGENT_DB_ENCRYPTION_KEY"))
         self._init_db()
 
     def _init_db(self) -> None:
@@ -150,10 +154,10 @@ class MemoryStore:
                 (
                     session_id,
                     timestamp,
-                    user_message,
-                    assistant_message,
-                    json.dumps(embedding) if embedding else None,
-                    json.dumps(metadata) if metadata else None,
+                    self._encryptor.encrypt(user_message),
+                    self._encryptor.encrypt(assistant_message),
+                    self._encryptor.encrypt(json.dumps(embedding)) if embedding else None,
+                    self._encryptor.encrypt(json.dumps(metadata)) if metadata else None,
                 ),
             )
             conn.commit()
@@ -196,10 +200,14 @@ class MemoryStore:
                     id=str(row["id"]),
                     session_id=row["session_id"],
                     timestamp=row["timestamp"],
-                    user_message=row["user_message"],
-                    assistant_message=row["assistant_message"],
-                    embedding=json.loads(row["embedding"]) if row["embedding"] else None,
-                    metadata=json.loads(row["metadata"]) if row["metadata"] else None,
+                    user_message=self._encryptor.decrypt(row["user_message"]),
+                    assistant_message=self._encryptor.decrypt(row["assistant_message"]),
+                    embedding=json.loads(self._encryptor.decrypt(row["embedding"]))
+                    if row["embedding"]
+                    else None,
+                    metadata=json.loads(self._encryptor.decrypt(row["metadata"]))
+                    if row["metadata"]
+                    else None,
                 )
             )
 
@@ -248,7 +256,9 @@ class MemoryStore:
         # Simple keyword scoring
         scored_memories = []
         for row in rows:
-            content = f"{row['user_message']} {row['assistant_message']}".lower()
+            user_msg = self._encryptor.decrypt(row["user_message"]) or ""
+            assistant_msg = self._encryptor.decrypt(row["assistant_message"]) or ""
+            content = f"{user_msg} {assistant_msg}".lower()
             score = sum(1 for kw in keywords if kw in content)
             if score > 0:
                 scored_memories.append((score, row))
@@ -256,20 +266,20 @@ class MemoryStore:
         # Sort by score and take top results
         scored_memories.sort(key=lambda x: x[0], reverse=True)
         top_rows = scored_memories[:limit]
-        # Sort by score and take top results
-        scored_memories.sort(key=lambda x: x[0], reverse=True)
-        top_rows = scored_memories[:limit]
-        top_rows = scored_memories[:limit]
 
         return [
             Memory(
                 id=str(row["id"]),
                 session_id=row["session_id"],
                 timestamp=row["timestamp"],
-                user_message=row["user_message"],
-                assistant_message=row["assistant_message"],
-                embedding=json.loads(row["embedding"]) if row["embedding"] else None,
-                metadata=json.loads(row["metadata"]) if row["metadata"] else None,
+                user_message=self._encryptor.decrypt(row["user_message"]),
+                assistant_message=self._encryptor.decrypt(row["assistant_message"]),
+                embedding=json.loads(self._encryptor.decrypt(row["embedding"]))
+                if row["embedding"]
+                else None,
+                metadata=json.loads(self._encryptor.decrypt(row["metadata"]))
+                if row["metadata"]
+                else None,
             )
             for _, row in top_rows
         ]
@@ -294,11 +304,15 @@ class MemoryStore:
         if row:
             return UserModel(
                 user_id=row["user_id"],
-                traits=json.loads(row["traits"]) if row["traits"] else {},
-                preferences=json.loads(row["preferences"]) if row["preferences"] else {},
+                traits=json.loads(self._encryptor.decrypt(row["traits"])) if row["traits"] else {},
+                preferences=json.loads(self._encryptor.decrypt(row["preferences"]))
+                if row["preferences"]
+                else {},
                 relationship_stage=row["relationship_stage"] or "initial",
                 interaction_patterns=(
-                    json.loads(row["interaction_patterns"]) if row["interaction_patterns"] else []
+                    json.loads(self._encryptor.decrypt(row["interaction_patterns"]))
+                    if row["interaction_patterns"]
+                    else []
                 ),
                 created_at=row["created_at"],
                 updated_at=row["updated_at"],
@@ -336,10 +350,10 @@ class MemoryStore:
                 """,
                 (
                     model.user_id,
-                    json.dumps(model.traits),
-                    json.dumps(model.preferences),
+                    self._encryptor.encrypt(json.dumps(model.traits)),
+                    self._encryptor.encrypt(json.dumps(model.preferences)),
                     model.relationship_stage,
-                    json.dumps(model.interaction_patterns),
+                    self._encryptor.encrypt(json.dumps(model.interaction_patterns)),
                     model.created_at,
                     model.updated_at,
                 ),
@@ -369,7 +383,12 @@ class MemoryStore:
                 INSERT INTO memory_summaries (session_id, summary, key_points, timestamp)
                 VALUES (?, ?, ?, ?)
                 """,
-                (session_id, summary, json.dumps(key_points), timestamp),
+                (
+                    session_id,
+                    self._encryptor.encrypt(summary),
+                    self._encryptor.encrypt(json.dumps(key_points)),
+                    timestamp,
+                ),
             )
             conn.commit()
 
@@ -405,8 +424,10 @@ class MemoryStore:
 
         return [
             {
-                "summary": row["summary"],
-                "key_points": json.loads(row["key_points"]) if row["key_points"] else [],
+                "summary": self._encryptor.decrypt(row["summary"]),
+                "key_points": json.loads(self._encryptor.decrypt(row["key_points"]))
+                if row["key_points"]
+                else [],
                 "timestamp": row["timestamp"],
             }
             for row in reversed(rows)

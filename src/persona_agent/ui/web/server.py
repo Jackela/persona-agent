@@ -28,6 +28,7 @@ from persona_agent.services.chat_service import (
     ChatSessionNotFoundError,
 )
 from persona_agent.services.session_service import SessionService
+from persona_agent.ui.web.middleware import StructuredAccessLogMiddleware
 
 _STATIC_DIR = Path(__file__).parent / "static"
 
@@ -82,6 +83,7 @@ async def lifespan(app: FastAPI):
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Persona Agent Web UI", version="0.1.0", lifespan=lifespan)
+app.add_middleware(StructuredAccessLogMiddleware)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(

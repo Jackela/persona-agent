@@ -2,12 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main, master, dev]
+    branches: [main, master, dev, future]
     paths-ignore:
       - '**.md'
       - 'docs/**'
   pull_request:
-    branches: [main, master, dev]
+    branches: [main, master, dev, future]
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -342,3 +342,19 @@ jobs:
 
       - name: Run actionlint
         run: ./actionlint -color
+
+  # ============================================
+  # Docker Build Validation
+  # ============================================
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t persona-agent:test .
+
+      - name: Validate CLI entrypoint
+        run: docker run --rm persona-agent:test python -m persona_agent.ui.cli --help

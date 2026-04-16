@@ -238,6 +238,20 @@ class TestStatsEndpoint:
         assert data["skills_count"] == 0
 
 
+class TestOpenApiDocs:
+    def test_docs_endpoint_returns_200(self, client):
+        response = client.get("/docs")
+        assert response.status_code == 200
+
+    def test_openapi_json_contains_schemas(self, client):
+        response = client.get("/openapi.json")
+        assert response.status_code == 200
+        data = response.json()
+        assert "components" in data
+        assert "schemas" in data["components"]
+        assert "DashboardStatsResponse" in data["components"]["schemas"]
+
+
 class TestSSEEndpoint:
     def test_stream_requires_auth(self, client):
         response = client.get("/api/sessions/test-session/messages/stream?message=hello")

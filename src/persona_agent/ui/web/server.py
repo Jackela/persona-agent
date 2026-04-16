@@ -11,7 +11,7 @@ from fastapi import Depends, FastAPI, HTTPException, Header, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -102,44 +102,120 @@ app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 
 
 class CreateSessionRequest(BaseModel):
-    persona_name: str | None = None
+    """Request model for creating a new chat session."""
+
+    persona_name: str | None = Field(
+        default=None,
+        description="Name of the persona to use for this session. Defaults to the system default if omitted.",
+        examples=["companion"],
+    )
 
 
 class ChatMessageRequest(BaseModel):
-    message: str
+    """Request model for sending a chat message."""
+
+    message: str = Field(
+        description="The text message to send to the persona.",
+        examples=["Hello, how are you today?"],
+    )
 
 
 class ChatMessageResponse(BaseModel):
-    role: str
-    content: str
-    timestamp: float | None = None
+    """Response model representing a single chat message."""
+
+    role: str = Field(
+        description="Role of the message sender, e.g. 'user', 'assistant', or 'system'.",
+        examples=["assistant"],
+    )
+    content: str = Field(
+        description="Text content of the message.",
+        examples=["I'm doing well, thank you for asking!"],
+    )
+    timestamp: float | None = Field(
+        default=None,
+        description="Unix timestamp of when the message was created.",
+        examples=[1713840000.0],
+    )
 
 
 class SessionSummary(BaseModel):
-    session_id: str
-    message_count: int
-    last_activity: str
+    """Summary representation of a chat session."""
+
+    session_id: str = Field(
+        description="Unique identifier for the session.",
+        examples=["sess_abc123"],
+    )
+    message_count: int = Field(
+        description="Total number of messages in the session.",
+        examples=[42],
+    )
+    last_activity: str = Field(
+        description="ISO-formatted timestamp of the last activity in the session.",
+        examples=["2024-04-23T10:30:00"],
+    )
 
 
 class SessionDetail(BaseModel):
-    session_id: str
-    persona_name: str
-    message_count: int
-    first_activity: str
-    last_activity: str
+    """Detailed representation of a chat session."""
+
+    session_id: str = Field(
+        description="Unique identifier for the session.",
+        examples=["sess_abc123"],
+    )
+    persona_name: str = Field(
+        description="Name of the persona assigned to this session.",
+        examples=["companion"],
+    )
+    message_count: int = Field(
+        description="Total number of messages in the session.",
+        examples=[42],
+    )
+    first_activity: str = Field(
+        description="ISO-formatted timestamp of the first message in the session.",
+        examples=["2024-04-23T08:00:00"],
+    )
+    last_activity: str = Field(
+        description="ISO-formatted timestamp of the last activity in the session.",
+        examples=["2024-04-23T10:30:00"],
+    )
 
 
 class MemoryStatsResponse(BaseModel):
-    working: dict[str, Any]
-    episodic: dict[str, Any]
-    semantic: dict[str, Any]
+    """Response model containing hierarchical memory statistics."""
+
+    working: dict[str, Any] = Field(
+        description="Statistics for working memory (recent exchanges).",
+        examples=[{"exchanges": 10, "max_size": 20}],
+    )
+    episodic: dict[str, Any] = Field(
+        description="Statistics for episodic memory (conversation episodes).",
+        examples=[{"total_episodes": 5}],
+    )
+    semantic: dict[str, Any] = Field(
+        description="Statistics for semantic memory (facts and entities).",
+        examples=[{"entities": 3, "facts": 12}],
+    )
 
 
 class DashboardStatsResponse(BaseModel):
-    persona_count: int
-    session_count_today: int
-    memory_count: int
-    skills_count: int
+    """Response model for dashboard statistics."""
+
+    persona_count: int = Field(
+        description="Number of configured personas/characters.",
+        examples=[5],
+    )
+    session_count_today: int = Field(
+        description="Number of chat sessions created or active today.",
+        examples=[12],
+    )
+    memory_count: int = Field(
+        description="Total number of memory entries across all tiers.",
+        examples=[150],
+    )
+    skills_count: int = Field(
+        description="Number of registered skills.",
+        examples=[3],
+    )
 
 
 class CharacterCreateRequest(BaseModel):
@@ -149,26 +225,105 @@ class CharacterCreateRequest(BaseModel):
     Other fields use sensible defaults from CharacterProfile.
     """
 
-    name: str
-    version: str = "1.0.0"
-    relationship: str | None = None
-    physical: dict[str, Any] | None = None
-    height: str | None = None
-    figure: str | None = None
-    hair: str | None = None
-    eyes: str | None = None
-    attire: dict[str, str] | None = None
-    traits: dict[str, Any] | None = None
-    psychological_drivers: dict[str, Any] | None = None
-    relationship_arcs: list[dict[str, Any]] = []
-    backstory: str = ""
-    core_memories: list[str] = []
-    goals: dict[str, Any] | None = None
-    knowledge_domains: list[str] = []
-    limitations: list[str] = []
-    interactive_hooks: list[str] = []
-    mood_config: str | None = None
-    linguistic_style: str | None = None
+    name: str = Field(
+        description="Unique name of the character.",
+        examples=["Aria"],
+    )
+    version: str = Field(
+        default="1.0.0",
+        description="Version string for the character configuration.",
+        examples=["1.0.0"],
+    )
+    relationship: str | None = Field(
+        default=None,
+        description="Initial relationship context or label.",
+        examples=["close friend"],
+    )
+    physical: dict[str, Any] | None = Field(
+        default=None,
+        description="Physical attributes and appearance details.",
+        examples=[{"species": "human", "age": "25"}],
+    )
+    height: str | None = Field(
+        default=None,
+        description="Character's height.",
+        examples=["165 cm"],
+    )
+    figure: str | None = Field(
+        default=None,
+        description="Character's build or figure description.",
+        examples=["slender"],
+    )
+    hair: str | None = Field(
+        default=None,
+        description="Character's hair color and style.",
+        examples=["long silver hair"],
+    )
+    eyes: str | None = Field(
+        default=None,
+        description="Character's eye color and shape.",
+        examples=["amber eyes"],
+    )
+    attire: dict[str, str] | None = Field(
+        default=None,
+        description="Clothing and accessory descriptions.",
+        examples=[{"top": "blue hoodie", "accessory": "silver necklace"}],
+    )
+    traits: dict[str, Any] | None = Field(
+        default=None,
+        description="Personality traits and behavioral tendencies.",
+        examples=[{"personality": {"openness": 0.8, "extraversion": 0.5}}],
+    )
+    psychological_drivers: dict[str, Any] | None = Field(
+        default=None,
+        description="Core motivations and psychological drivers.",
+        examples=[{"primary": "seeking connection", "fears": ["abandonment"]}],
+    )
+    relationship_arcs: list[dict[str, Any]] = Field(
+        default=[],
+        description="Defined relationship progression arcs.",
+        examples=[[{"stage": "acquaintance", "trigger": "first meeting"}]],
+    )
+    backstory: str = Field(
+        default="",
+        description="Character's background story and history.",
+        examples=["Grew up in a quiet coastal town..."],
+    )
+    core_memories: list[str] = Field(
+        default=[],
+        description="Pivotal memories that shape the character's identity.",
+        examples=[["won a singing competition at age 16"]],
+    )
+    goals: dict[str, Any] | None = Field(
+        default=None,
+        description="Character's short-term and long-term goals.",
+        examples=[{"primary": "become a renowned artist"}],
+    )
+    knowledge_domains: list[str] = Field(
+        default=[],
+        description="Areas of expertise or knowledge for the character.",
+        examples=[["classical music", "marine biology"]],
+    )
+    limitations: list[str] = Field(
+        default=[],
+        description="Constraints, boundaries, or topics to avoid.",
+        examples=[["cannot leave the digital realm"]],
+    )
+    interactive_hooks: list[str] = Field(
+        default=[],
+        description="Hooks used to drive interactive engagement.",
+        examples=[["asks about user's day"]],
+    )
+    mood_config: str | None = Field(
+        default=None,
+        description="Path or identifier for the mood configuration file.",
+        examples=["config/mood_states/default.md"],
+    )
+    linguistic_style: str | None = Field(
+        default=None,
+        description="Path or identifier for the linguistic style configuration file.",
+        examples=["config/linguistic_styles/default.json"],
+    )
 
 
 class CharacterUpdateRequest(BaseModel):
@@ -178,26 +333,106 @@ class CharacterUpdateRequest(BaseModel):
     Only provide the fields you want to change.
     """
 
-    name: str | None = None
-    version: str | None = None
-    relationship: str | None = None
-    physical: dict[str, Any] | None = None
-    height: str | None = None
-    figure: str | None = None
-    hair: str | None = None
-    eyes: str | None = None
-    attire: dict[str, str] | None = None
-    traits: dict[str, Any] | None = None
-    psychological_drivers: dict[str, Any] | None = None
-    relationship_arcs: list[dict[str, Any]] | None = None
-    backstory: str | None = None
-    core_memories: list[str] | None = None
-    goals: dict[str, Any] | None = None
-    knowledge_domains: list[str] | None = None
-    limitations: list[str] | None = None
-    interactive_hooks: list[str] | None = None
-    mood_config: str | None = None
-    linguistic_style: str | None = None
+    name: str | None = Field(
+        default=None,
+        description="Updated unique name of the character.",
+        examples=["Aria"],
+    )
+    version: str | None = Field(
+        default=None,
+        description="Updated version string.",
+        examples=["1.1.0"],
+    )
+    relationship: str | None = Field(
+        default=None,
+        description="Updated relationship context or label.",
+        examples=["close friend"],
+    )
+    physical: dict[str, Any] | None = Field(
+        default=None,
+        description="Updated physical attributes.",
+        examples=[{"species": "human", "age": "26"}],
+    )
+    height: str | None = Field(
+        default=None,
+        description="Updated height.",
+        examples=["165 cm"],
+    )
+    figure: str | None = Field(
+        default=None,
+        description="Updated build or figure description.",
+        examples=["slender"],
+    )
+    hair: str | None = Field(
+        default=None,
+        description="Updated hair color and style.",
+        examples=["long silver hair"],
+    )
+    eyes: str | None = Field(
+        default=None,
+        description="Updated eye color and shape.",
+        examples=["amber eyes"],
+    )
+    attire: dict[str, str] | None = Field(
+        default=None,
+        description="Updated clothing and accessory descriptions.",
+        examples=[{"top": "blue hoodie", "accessory": "silver necklace"}],
+    )
+    traits: dict[str, Any] | None = Field(
+        default=None,
+        description="Updated personality traits.",
+        examples=[{"personality": {"openness": 0.9}}],
+    )
+    psychological_drivers: dict[str, Any] | None = Field(
+        default=None,
+        description="Updated core motivations.",
+        examples=[{"primary": "seeking connection"}],
+    )
+    relationship_arcs: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Updated relationship progression arcs.",
+        examples=[[{"stage": "friend", "trigger": "shared secret"}]],
+    )
+    backstory: str | None = Field(
+        default=None,
+        description="Updated background story.",
+        examples=["Moved to the city to pursue music..."],
+    )
+    core_memories: list[str] | None = Field(
+        default=None,
+        description="Updated pivotal memories.",
+        examples=[["won a singing competition at age 16"]],
+    )
+    goals: dict[str, Any] | None = Field(
+        default=None,
+        description="Updated goals.",
+        examples=[{"primary": "become a renowned artist"}],
+    )
+    knowledge_domains: list[str] | None = Field(
+        default=None,
+        description="Updated areas of expertise.",
+        examples=[["classical music", "marine biology"]],
+    )
+    limitations: list[str] | None = Field(
+        default=None,
+        description="Updated constraints or boundaries.",
+        examples=[["cannot leave the digital realm"]],
+    )
+    interactive_hooks: list[str] | None = Field(
+        default=None,
+        description="Updated interactive engagement hooks.",
+        examples=[["asks about user's day"]],
+    )
+    mood_config: str | None = Field(
+        default=None,
+        description="Updated mood configuration path.",
+        examples=["config/mood_states/default.md"],
+    )
+    linguistic_style: str | None = Field(
+        default=None,
+        description="Updated linguistic style configuration path.",
+        examples=["config/linguistic_styles/default.json"],
+    )
 
 
 # ============================================================================
@@ -207,11 +442,21 @@ class CharacterUpdateRequest(BaseModel):
 
 @app.get("/")
 async def root() -> FileResponse:
+    """Serve the main web UI entry point (index.html).
+
+    Returns:
+        FileResponse: The static index.html file.
+    """
     return FileResponse(_STATIC_DIR / "index.html")
 
 
 @app.get("/health")
 async def health() -> dict[str, str]:
+    """Health check endpoint.
+
+    Returns:
+        dict[str, str]: A simple status object indicating the service is healthy.
+    """
     return {"status": "ok"}
 
 
@@ -224,6 +469,11 @@ async def get_stats(
     session_service: SessionService = Depends(get_session_service),
     memory: HierarchicalMemory = Depends(get_memory),
 ) -> DashboardStatsResponse:
+    """Return dashboard statistics including persona, session, memory, and skill counts.
+
+    Returns:
+        DashboardStatsResponse: Aggregated statistics for the dashboard.
+    """
     persona_count = len(character_service.list_characters())
 
     sessions = await session_service.list_sessions(limit=1000)
@@ -269,6 +519,14 @@ async def list_sessions(
     api_key: str = Depends(verify_api_key),
     session_service: SessionService = Depends(get_session_service),
 ) -> list[SessionSummary]:
+    """List recent chat sessions with summary information.
+
+    Args:
+        limit: Maximum number of sessions to return.
+
+    Returns:
+        list[SessionSummary]: A list of session summaries.
+    """
     sessions = await session_service.list_sessions(limit=limit)
     return [
         SessionSummary(
@@ -290,6 +548,17 @@ async def create_session(
     api_key: str = Depends(verify_api_key),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> dict[str, str]:
+    """Create a new chat session with an optional persona.
+
+    Args:
+        body: Optional session creation request containing the desired persona.
+
+    Returns:
+        dict[str, str]: The newly created session ID.
+
+    Raises:
+        HTTPException: If the requested persona is not found.
+    """
     try:
         persona_name = body.persona_name if body else None
         session_id = await chat_service.create_new_session(persona_name=persona_name)
@@ -308,6 +577,17 @@ async def get_session(
     api_key: str = Depends(verify_api_key),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> SessionDetail:
+    """Retrieve detailed information for a specific chat session.
+
+    Args:
+        session_id: The unique identifier of the session.
+
+    Returns:
+        SessionDetail: Detailed metadata about the session.
+
+    Raises:
+        HTTPException: If the session is not found.
+    """
     try:
         info = await chat_service.get_session_info(session_id)
         return SessionDetail(
@@ -333,6 +613,14 @@ async def delete_session(
     api_key: str = Depends(verify_api_key),
     session_service: SessionService = Depends(get_session_service),
 ) -> dict[str, bool]:
+    """Delete a chat session and all associated data.
+
+    Args:
+        session_id: The unique identifier of the session to delete.
+
+    Returns:
+        dict[str, bool]: Confirmation that the session was deleted.
+    """
     try:
         await session_service.delete_session(session_id)
         return {"deleted": True}
@@ -354,6 +642,18 @@ async def send_message(
     api_key: str = Depends(verify_api_key),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> dict[str, str]:
+    """Send a chat message to a session and receive the persona's response.
+
+    Args:
+        session_id: The unique identifier of the target session.
+        body: The chat message request containing the user's message.
+
+    Returns:
+        dict[str, str]: The assistant's response content.
+
+    Raises:
+        HTTPException: If the session or persona is not found, or input is filtered.
+    """
     try:
         response = await chat_service.send_message(session_id=session_id, message=body.message)
         return {"content": response}
@@ -441,6 +741,17 @@ async def get_history(
     api_key: str = Depends(verify_api_key),
     chat_service: ChatService = Depends(get_chat_service),
 ) -> list[ChatMessageResponse]:
+    """Retrieve the conversation history for a specific session.
+
+    Args:
+        session_id: The unique identifier of the target session.
+
+    Returns:
+        list[ChatMessageResponse]: The list of messages in the conversation.
+
+    Raises:
+        HTTPException: If the session is not found.
+    """
     try:
         history = await chat_service.get_conversation_history(session_id, include_system=False)
         return [
@@ -467,6 +778,11 @@ async def list_characters(
     api_key: str = Depends(verify_api_key),
     character_service: CharacterService = Depends(get_character_service),
 ) -> list[str]:
+    """List all available character/persona names.
+
+    Returns:
+        list[str]: A list of character names.
+    """
     return character_service.list_characters()
 
 
@@ -478,6 +794,17 @@ async def get_character(
     api_key: str = Depends(verify_api_key),
     character_service: CharacterService = Depends(get_character_service),
 ) -> dict[str, Any]:
+    """Retrieve the full profile of a specific character.
+
+    Args:
+        name: The unique name of the character.
+
+    Returns:
+        dict[str, Any]: The character profile as a dictionary.
+
+    Raises:
+        HTTPException: If the character is not found.
+    """
     try:
         char = character_service.get_character(name)
         return char.model_dump()
@@ -493,6 +820,17 @@ async def create_character(
     api_key: str = Depends(verify_api_key),
     character_service: CharacterService = Depends(get_character_service),
 ) -> dict[str, str]:
+    """Create a new character from the provided profile data.
+
+    Args:
+        body: Character creation request with all profile fields.
+
+    Returns:
+        dict[str, str]: The file path where the character was saved.
+
+    Raises:
+        HTTPException: If the provided data is invalid.
+    """
     try:
         profile = CharacterProfile(**body.model_dump())
         path = character_service.create_character(profile)
@@ -510,6 +848,18 @@ async def update_character(
     api_key: str = Depends(verify_api_key),
     character_service: CharacterService = Depends(get_character_service),
 ) -> dict[str, str]:
+    """Update an existing character with partial profile data.
+
+    Args:
+        name: The unique name of the character to update.
+        body: Character update request with only the fields to change.
+
+    Returns:
+        dict[str, str]: The file path where the updated character was saved.
+
+    Raises:
+        HTTPException: If the provided data is invalid.
+    """
     try:
         profile = CharacterProfile(**body.model_dump(exclude_none=True))
         path = character_service.update_character(name, profile)
@@ -530,6 +880,11 @@ async def memory_stats(
     api_key: str = Depends(verify_api_key),
     memory: HierarchicalMemory = Depends(get_memory),
 ) -> MemoryStatsResponse:
+    """Retrieve statistics for the hierarchical memory system.
+
+    Returns:
+        MemoryStatsResponse: Statistics for working, episodic, and semantic memory tiers.
+    """
     stats = memory.get_stats()
     return MemoryStatsResponse(
         working=stats["working"],
@@ -545,6 +900,11 @@ async def memory_graph(
     api_key: str = Depends(verify_api_key),
     memory: HierarchicalMemory = Depends(get_memory),
 ) -> dict[str, list[dict[str, Any]]]:
+    """Export the semantic memory graph as nodes and edges.
+
+    Returns:
+        dict[str, list[dict[str, Any]]]: The memory graph structure.
+    """
     return memory.export_graph()
 
 
@@ -556,6 +916,14 @@ async def memory_retrieve(
     api_key: str = Depends(verify_api_key),
     memory: HierarchicalMemory = Depends(get_memory),
 ) -> dict[str, Any]:
+    """Retrieve relevant memory context for a given query.
+
+    Args:
+        q: The query string to search memory against.
+
+    Returns:
+        dict[str, Any]: Combined working, episodic, and semantic context plus fusion score.
+    """
     context = await memory.retrieve(q)
     return {
         "working_messages": [
@@ -584,6 +952,11 @@ async def dashboard_stats(
     session_service: SessionService = Depends(get_session_service),
     memory: HierarchicalMemory = Depends(get_memory),
 ) -> DashboardStatsResponse:
+    """Return comprehensive dashboard statistics.
+
+    Returns:
+        DashboardStatsResponse: Aggregated counts for personas, sessions, memories, and skills.
+    """
     persona_count = len(character_service.list_characters())
 
     sessions = await session_service.list_sessions(limit=1000)

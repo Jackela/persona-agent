@@ -39,9 +39,9 @@ def verify_api_key(
     api_key: str | None = None,
 ) -> str:
     key = x_api_key or api_key
-    if _api_key is None:
+    if not _api_key:
         raise HTTPException(status_code=500, detail="API key not configured")
-    if key is None or key != _api_key:
+    if not key or key != _api_key:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return key
 
@@ -71,13 +71,9 @@ async def lifespan(app: FastAPI):
     app.state.memory = HierarchicalMemory()
 
     env_key = os.environ.get("PERSONA_AGENT_API_KEY")
-    if env_key:
-        _api_key = env_key
-        print("[Server] Using API key from PERSONA_AGENT_API_KEY environment variable")
-    else:
-        _api_key = "dev"
-        print("[Server] Generated default API key: dev")
-        print("[Server] Set PERSONA_AGENT_API_KEY env var to use a custom key")
+    if not env_key:
+        raise RuntimeError("PERSONA_AGENT_API_KEY environment variable is required")
+    _api_key = env_key
 
     yield
     await app.state.chat_service.close()

@@ -1,5 +1,14 @@
 (function () {
-    const API_KEY = 'dev';
+    function getApiKey() {
+        let key = sessionStorage.getItem('pa_api_key');
+        if (!key) {
+            key = prompt('请输入 API Key:');
+            if (key) {
+                sessionStorage.setItem('pa_api_key', key);
+            }
+        }
+        return key || '';
+    }
 
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
     const sidebar = document.getElementById('sidebar');
@@ -120,7 +129,7 @@
     async function loadDashboardStats() {
         try {
             const res = await fetch('/api/stats', {
-                headers: { 'X-API-Key': API_KEY },
+                headers: { 'X-API-Key': getApiKey() },
             });
             if (!res.ok) throw new Error('Failed to load stats');
             const data = await res.json();
@@ -242,7 +251,7 @@
         try {
             const res = await fetch(`/api/sessions/${currentSessionId}/messages`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': getApiKey() },
                 body: JSON.stringify({ message: text }),
             });
             const data = await res.json();
@@ -279,7 +288,7 @@
 
         const encodedMessage = encodeURIComponent(text);
         const evtSource = new EventSource(
-            `/api/sessions/${currentSessionId}/messages/stream?message=${encodedMessage}&api_key=${API_KEY}`
+            `/api/sessions/${currentSessionId}/messages/stream?message=${encodedMessage}&api_key=${encodeURIComponent(getApiKey())}`
         );
 
         const msgEl = createStreamingMessage();
@@ -336,7 +345,7 @@
     if (chatNewSession) {
         chatNewSession.addEventListener('click', async () => {
             try {
-                const res = await fetch('/api/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY } });
+                const res = await fetch('/api/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': getApiKey() } });
                 const data = await res.json();
                 const id = data.session_id || data.id || String(Date.now());
                 currentSessionId = id;
@@ -408,7 +417,7 @@
     async function loadPersona() {
         const name = personaSelect ? personaSelect.value : 'default';
         try {
-            const res = await fetch(`/api/characters/${name}`, { headers: { 'X-API-Key': API_KEY } });
+            const res = await fetch(`/api/characters/${name}`, { headers: { 'X-API-Key': getApiKey() } });
             if (!res.ok) throw new Error('Failed to load');
             const data = await res.json();
             document.getElementById('peName').value = data.name || '';
@@ -484,7 +493,7 @@
         try {
             const res = await fetch(`/api/characters/${name}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+                headers: { 'Content-Type': 'application/json', 'X-API-Key': getApiKey() },
                 body: JSON.stringify(payload),
             });
             if (!res.ok) throw new Error('Failed to save');
@@ -502,7 +511,7 @@
 
     async function loadMemoryStats() {
         try {
-            const res = await fetch('/api/memory/stats', { headers: { 'X-API-Key': API_KEY } });
+            const res = await fetch('/api/memory/stats', { headers: { 'X-API-Key': getApiKey() } });
             if (!res.ok) throw new Error('Failed to load memory stats');
             const data = await res.json();
 

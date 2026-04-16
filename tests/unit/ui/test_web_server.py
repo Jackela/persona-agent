@@ -42,7 +42,9 @@ def test_api_key():
 
 
 @pytest.fixture
-def client(test_api_key):
+def client(test_api_key, monkeypatch):
+    monkeypatch.setenv("PERSONA_AGENT_API_KEY", test_api_key)
+
     mock_session = Mock()
     mock_session.list_sessions = AsyncMock(return_value=[])
     mock_session.delete_session = AsyncMock(return_value=None)
@@ -88,8 +90,8 @@ def client(test_api_key):
     }
 
     original_key = web_server._api_key
-    web_server._api_key = test_api_key
-    yield TestClient(web_server.app)
+    with TestClient(web_server.app) as client:
+        yield client
     web_server._api_key = original_key
     web_server.app.dependency_overrides.clear()
 
@@ -168,15 +170,32 @@ class TestCharacterEndpoints:
         assert "saved_to" in response.json()
 
 
-class TestApiKeyDefaultValue:
-    def test_default_api_key_is_dev(self):
-        with pytest.MonkeyPatch().context() as mp:
-            mp.setattr(web_server, "_api_key", None)
-            env_key = web_server.os.environ.get("PERSONA_AGENT_API_KEY")
-            if env_key is None:
-                assert web_server._api_key is None
-            else:
-                assert web_server._api_key == env_key
+class TestApiKeyEnvRequirement:
+    def test_lifespan_raises_when_env_key_missing(self, monkeypatch):
+        monkeypatch.delenv("PERSONA_AGENT_API_KEY", raising=False)
+        original_key = web_server._api_key
+        web_server._api_key = None
+        try:
+            with pytest.raises(
+                RuntimeError, match="PERSONA_AGENT_API_KEY environment variable is required"
+            ):
+                with TestClient(web_server.app):
+                    pass
+        finally:
+            web_server._api_key = original_key
+
+    def test_lifespan_raises_when_env_key_empty(self, monkeypatch):
+        monkeypatch.setenv("PERSONA_AGENT_API_KEY", "")
+        original_key = web_server._api_key
+        web_server._api_key = None
+        try:
+            with pytest.raises(
+                RuntimeError, match="PERSONA_AGENT_API_KEY environment variable is required"
+            ):
+                with TestClient(web_server.app):
+                    pass
+        finally:
+            web_server._api_key = original_key
 
     def test_verify_api_key_rejects_invalid(self, test_api_key):
         web_server._api_key = test_api_key
@@ -184,6 +203,15 @@ class TestApiKeyDefaultValue:
 
         with pytest.raises(HTTPException) as exc_info:
             web_server.verify_api_key("wrong-key")
+        assert exc_info.value.status_code == 401
+        web_server._api_key = None
+
+    def test_verify_api_key_rejects_empty_string(self, test_api_key):
+        web_server._api_key = test_api_key
+        from fastapi import HTTPException
+
+        with pytest.raises(HTTPException) as exc_info:
+            web_server.verify_api_key("")
         assert exc_info.value.status_code == 401
         web_server._api_key = None
 

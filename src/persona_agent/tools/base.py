@@ -309,9 +309,8 @@ class Tool(ABC):
 
     def _check_type(self, value: Any, expected_type: str) -> bool:
         """Check if value matches expected type."""
-        from typing import Type, Union
 
-        type_map: dict[str, Type | tuple[Type, ...]] = {
+        type_map: dict[str, type | tuple[type, ...]] = {
             "string": str,
             "integer": int,
             "number": (int, float),

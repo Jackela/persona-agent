@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from persona_agent.core.memory.exceptions import SummarizationError
 
@@ -139,11 +139,10 @@ The summary should be written in third person and focus on factual content."""
                 f"Failed to summarize {len(memories)} memories: {e}",
                 memory_count=len(memories),
                 prompt_length=len(prompt) if "prompt" in locals() else 0,
-            )
+            ) from e
 
     def _build_prompt(self, memories: list[EpisodicEntry]) -> str:
         """Build the summarization prompt."""
-        from datetime import datetime
 
         # Sort memories by timestamp
         sorted_memories = sorted(memories, key=lambda m: m.timestamp)

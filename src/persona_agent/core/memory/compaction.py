@@ -10,11 +10,11 @@ import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from persona_agent.core.memory.exceptions import CompactionError, MemoryGroupError
-from persona_agent.core.memory.summarizer import MemorySummarizer, SummaryMetadata
+from persona_agent.core.memory.exceptions import CompactionError
+from persona_agent.core.memory.summarizer import MemorySummarizer
 
 if TYPE_CHECKING:
     from persona_agent.core.memory.episodic_memory import EpisodicEntry, EpisodicMemory
@@ -119,7 +119,7 @@ class CompactionStatistics:
         self.total_memories_compacted += result.compacted_count
         self.total_summaries_created += result.summaries_created
         self.total_bytes_saved += result.bytes_saved
-        self.last_compaction_time = datetime.now(timezone.utc)
+        self.last_compaction_time = datetime.now(UTC)
         self.last_compaction_result = result
         if result.errors:
             self.errors_count += len(result.errors)
@@ -285,8 +285,7 @@ class MemoryCompactor:
         older_than_days: int,
     ) -> list[EpisodicEntry]:
         """Get memories eligible for compaction."""
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=older_than_days)
-        preserve_date = datetime.now(timezone.utc) - timedelta(days=self.config.preserve_recent)
+        preserve_date = datetime.now(UTC) - timedelta(days=self.config.preserve_recent)
 
         candidates: list[EpisodicEntry] = []
 
@@ -331,7 +330,7 @@ class MemoryCompactor:
             # Create date key based on window
             days_since_epoch = memory.timestamp.toordinal()
             window_start_ordinal = (days_since_epoch // window_days) * window_days
-            window_start = datetime.fromordinal(window_start_ordinal).replace(tzinfo=timezone.utc)
+            window_start = datetime.fromordinal(window_start_ordinal).replace(tzinfo=UTC)
             date_key = window_start.strftime("%Y-%m-%d")
             groups[date_key].append(memory)
 
@@ -372,7 +371,7 @@ class MemoryCompactor:
                 "type": "compaction_summary",
                 "original_count": len(memories),
                 "date_range": date_key,
-                "compacted_at": datetime.now(timezone.utc).isoformat(),
+                "compacted_at": datetime.now(UTC).isoformat(),
                 "key_entities": metadata.key_entities,
                 "key_themes": metadata.key_themes,
                 "confidence": metadata.confidence,

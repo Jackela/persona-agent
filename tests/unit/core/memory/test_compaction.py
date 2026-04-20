@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -13,7 +13,6 @@ from persona_agent.core.memory.compaction import (
     CompactionStatistics,
     MemoryCompactor,
 )
-from persona_agent.core.memory.exceptions import CompactionError
 
 
 class TestCompactionResult:
@@ -231,7 +230,7 @@ class TestMemoryCompactor:
         from persona_agent.core.hierarchical_memory import EpisodicEntry
 
         # Create test memories
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         old_time = now - timedelta(days=10)
 
         mock_episodic_memory._episodes = {
@@ -275,8 +274,8 @@ class TestMemoryCompactor:
         """Test memory grouping by time window."""
         from persona_agent.core.hierarchical_memory import EpisodicEntry
 
-        window1 = datetime(2024, 1, 1, tzinfo=timezone.utc)
-        window2 = datetime(2024, 1, 8, tzinfo=timezone.utc)
+        window1 = datetime(2024, 1, 1, tzinfo=UTC)
+        window2 = datetime(2024, 1, 8, tzinfo=UTC)
 
         memories = [
             EpisodicEntry(
@@ -310,7 +309,7 @@ class TestMemoryCompactor:
         """Test compacting a memory group."""
         from persona_agent.core.hierarchical_memory import EpisodicEntry
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         memories = [
             EpisodicEntry(

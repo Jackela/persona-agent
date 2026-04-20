@@ -8,9 +8,9 @@ session management, and LLM clients for AI responses.
 from __future__ import annotations
 
 import uuid
+from collections.abc import AsyncIterator
 from datetime import datetime
 from pathlib import Path
-from collections.abc import AsyncIterator
 from typing import Any
 
 from persona_agent.config.schemas.character import CharacterProfile

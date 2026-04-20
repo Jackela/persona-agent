@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
 from typing import Any
 
 from persona_agent.core.memory.episodic_memory import (

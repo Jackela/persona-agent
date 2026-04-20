@@ -29,9 +29,9 @@ sys.modules["slowapi"] = slowapi_mock
 sys.modules["slowapi.errors"] = slowapi_mock.errors
 sys.modules["slowapi.util"] = slowapi_mock.util
 
-from persona_agent.ui.web import server as web_server
-
 import importlib
+
+from persona_agent.ui.web import server as web_server
 
 importlib.reload(web_server)
 
@@ -176,11 +176,13 @@ class TestApiKeyEnvRequirement:
         original_key = web_server._api_key
         web_server._api_key = None
         try:
-            with pytest.raises(
-                RuntimeError, match="PERSONA_AGENT_API_KEY environment variable is required"
+            with (
+                pytest.raises(
+                    RuntimeError, match="PERSONA_AGENT_API_KEY environment variable is required"
+                ),
+                TestClient(web_server.app),
             ):
-                with TestClient(web_server.app):
-                    pass
+                pass
         finally:
             web_server._api_key = original_key
 
@@ -189,11 +191,13 @@ class TestApiKeyEnvRequirement:
         original_key = web_server._api_key
         web_server._api_key = None
         try:
-            with pytest.raises(
-                RuntimeError, match="PERSONA_AGENT_API_KEY environment variable is required"
+            with (
+                pytest.raises(
+                    RuntimeError, match="PERSONA_AGENT_API_KEY environment variable is required"
+                ),
+                TestClient(web_server.app),
             ):
-                with TestClient(web_server.app):
-                    pass
+                pass
         finally:
             web_server._api_key = original_key
 

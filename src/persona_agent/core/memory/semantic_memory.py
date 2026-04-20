@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
+import importlib.util
 from datetime import datetime
 from typing import Any
 
-try:
-    import networkx as nx  # type: ignore[import-untyped]
-
-    NETWORKX_AVAILABLE = True
-except ImportError:
-    NETWORKX_AVAILABLE = False
+NETWORKX_AVAILABLE = importlib.util.find_spec("networkx") is not None
 
 
 class SemanticMemory:

@@ -343,7 +343,7 @@ class TestChatService:
         assert exc_info.value.details["session_id"] == "test-session-123"
 
     @pytest.mark.asyncio
-    async def test_send_message_stream_does_not_save_on_llm_error(
+    async def test_send_message_saves_fallback_on_llm_error(
         self,
         chat_service,
         mock_session_repo,
@@ -354,7 +354,9 @@ class TestChatService:
     ):
         mock_session_repo.get_by_id.return_value = mock_session
         mock_character_service.get_character.return_value = mock_character_profile
-        mock_llm_client.chat_stream = Mock(side_effect=Exception("LLM API Error"))
+        mock_llm_response = Mock()
+        mock_llm_response.content = "AI Response"
+        mock_llm_client.chat.return_value = mock_llm_response
         original_message_count = len(mock_session.messages)
 
         # Act

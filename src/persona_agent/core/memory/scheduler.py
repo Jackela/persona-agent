@@ -7,10 +7,12 @@ memory compaction at configurable intervals.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Callable
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING, Any
 
 from persona_agent.core.memory.compaction import CompactionResult
 from persona_agent.core.memory.exceptions import SchedulerError
@@ -105,7 +107,7 @@ class AutoCompactionScheduler:
         self._task = asyncio.create_task(self._run_scheduler())
 
         logger.info(
-            f"AutoCompactionScheduler started " f"(interval: {self.config.check_interval_hours}h)"
+            f"AutoCompactionScheduler started (interval: {self.config.check_interval_hours}h)"
         )
 
     async def stop(self) -> None:
@@ -118,10 +120,8 @@ class AutoCompactionScheduler:
 
         if self._task:
             self._task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._task
-            except asyncio.CancelledError:
-                pass
             self._task = None
 
         logger.info("AutoCompactionScheduler stopped")
@@ -170,13 +170,11 @@ class AutoCompactionScheduler:
 
                 # Wait for next check or stop signal
                 wait_seconds = self.config.check_interval_hours * 3600
-                try:
+                with contextlib.suppress(TimeoutError):
                     await asyncio.wait_for(
                         self._stop_event.wait(),
                         timeout=wait_seconds,
                     )
-                except asyncio.TimeoutError:
-                    pass  # Normal timeout, continue loop
 
             except asyncio.CancelledError:
                 logger.debug("Scheduler task cancelled")
@@ -202,7 +200,7 @@ class AutoCompactionScheduler:
         if self._last_check is None:
             return True
 
-        elapsed = datetime.now(timezone.utc) - self._last_check
+        elapsed = datetime.now(UTC) - self._last_check
         check_interval = timedelta(hours=self.config.check_interval_hours)
 
         return elapsed >= check_interval
@@ -213,7 +211,7 @@ class AutoCompactionScheduler:
         Returns:
             CompactionResult if compaction was performed, None otherwise
         """
-        self._last_check = datetime.now(timezone.utc)
+        self._last_check = datetime.now(UTC)
 
         # Check if compactor is busy
         if self.compactor.is_compacting():
@@ -224,8 +222,7 @@ class AutoCompactionScheduler:
         memory_count = len(self.compactor.episodic_memory._episodes)
         if memory_count < self.config.memory_threshold:
             logger.debug(
-                f"Memory count ({memory_count}) below threshold "
-                f"({self.config.memory_threshold})"
+                f"Memory count ({memory_count}) below threshold ({self.config.memory_threshold})"
             )
             return None
 

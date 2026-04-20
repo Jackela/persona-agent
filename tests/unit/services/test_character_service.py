@@ -9,6 +9,7 @@ from persona_agent.services.character_service import (
     CharacterLoadError,
     CharacterNotFoundError,
     CharacterService,
+    CharacterServiceError,
 )
 
 
@@ -182,3 +183,106 @@ class TestCharacterService:
         # Assert
         assert error.details["reason"] == "File corrupted"
         assert "test_char" in str(error)
+
+    def test_validate_character_name_valid(self, service):
+        """Test that valid character names pass validation."""
+        # Arrange, Act & Assert - should not raise
+        service._validate_character_name("default")
+        service._validate_character_name("my-character")
+        service._validate_character_name("companion_v2")
+
+    @pytest.mark.parametrize(
+        "invalid_name",
+        [
+            "../etc/passwd",
+            "..\\windows\\system32",
+            "config:yaml",
+            "char<name>",
+            "char/name",
+            "char\\name",
+            "char*name",
+            'char"name',
+            "char?name",
+            "char|name",
+            "",
+            "   ",
+        ],
+    )
+    def test_validate_character_name_invalid_raises(self, service, invalid_name):
+        """Test that invalid character names raise CharacterServiceError."""
+        # Act & Assert
+        with pytest.raises(CharacterServiceError) as exc_info:
+            service._validate_character_name(invalid_name)
+
+        assert "Invalid character name" in str(exc_info.value)
+
+    def test_create_character_valid(self, service, tmp_path, mock_loader):
+        """Test creating a character with a valid name."""
+        # Arrange
+        mock_loader.config_dir = tmp_path
+        service._loader = mock_loader
+
+        profile = Mock(spec=CharacterProfile)
+        profile.name = "new_char"
+        with patch.object(profile, "to_yaml"):
+            # Act
+            result = service.create_character(profile)
+
+        # Assert
+        assert result == tmp_path / "characters" / "new_char.yaml"
+        mock_loader.clear_cache.assert_called_once()
+
+    def test_create_character_invalid_name_raises(self, service):
+        """Test creating a character with a path traversal name raises error."""
+        # Arrange
+        profile = Mock(spec=CharacterProfile)
+        profile.name = "../../etc/passwd"
+
+        # Act & Assert
+        with pytest.raises(CharacterServiceError) as exc_info:
+            service.create_character(profile)
+
+        assert "Invalid character name" in str(exc_info.value)
+
+    def test_update_character_valid(self, service, tmp_path, mock_loader):
+        """Test updating a character with a valid name."""
+        # Arrange
+        mock_loader.config_dir = tmp_path
+        service._loader = mock_loader
+
+        profile = Mock(spec=CharacterProfile)
+        profile.name = "updated_char"
+        with patch.object(profile, "to_yaml"):
+            # Act
+            result = service.update_character("updated_char", profile)
+
+        # Assert
+        assert result == tmp_path / "characters" / "updated_char.yaml"
+        mock_loader.clear_cache.assert_called_once()
+
+    def test_update_character_invalid_name_raises(self, service):
+        """Test updating a character with a path traversal name raises error."""
+        # Arrange
+        profile = Mock(spec=CharacterProfile)
+        profile.name = "updated_char"
+
+        # Act & Assert
+        with pytest.raises(CharacterServiceError) as exc_info:
+            service.update_character("../../etc/passwd", profile)
+
+        assert "Invalid character name" in str(exc_info.value)
+
+    def test_save_character_no_arbitrary_path(self, service, tmp_path, mock_loader):
+        """Test save_character does not accept arbitrary path parameter."""
+        # Arrange
+        mock_loader.config_dir = tmp_path
+        service._loader = mock_loader
+
+        profile = Mock(spec=CharacterProfile)
+        profile.name = "saved_char"
+        with patch.object(profile, "to_yaml"):
+            # Act
+            result = service.save_character(profile)
+
+        # Assert
+        assert result == tmp_path / "characters" / "saved_char.yaml"

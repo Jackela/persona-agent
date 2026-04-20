@@ -181,6 +181,75 @@ class CharacterService:
         """
         self._loader.clear_cache()
 
+    def _validate_character_name(self, name: str) -> None:
+        """Validate that a character name is safe for use as a filename.
+
+        Args:
+            name: Character name to validate
+
+        Raises:
+            CharacterServiceError: If the character name is unsafe for filenames
+        """
+        unsafe_chars = {"/", "\\", "..", ":", "<", ">", "|", "*", "?", '"'}
+        if any(ch in name for ch in unsafe_chars) or not name.strip():
+            raise CharacterServiceError(
+                f"Invalid character name: {name}",
+                character_name=name,
+            )
+
+    def save_character(self, profile: CharacterProfile) -> Path:
+        """Save a character profile to YAML.
+
+        Args:
+            profile: CharacterProfile to save
+
+        Returns:
+            Path where the character was saved
+        """
+        path = self._loader.config_dir / "characters" / f"{profile.name}.yaml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        profile.to_yaml(path)
+        return path
+
+    def create_character(self, profile: CharacterProfile) -> Path:
+        """Create a new character profile.
+
+        Saves to config/characters/{name}.yaml and validates
+        filename safety to prevent path traversal.
+
+        Args:
+            profile: CharacterProfile to create
+
+        Returns:
+            Path where the character was saved
+
+        Raises:
+            CharacterServiceError: If the character name is unsafe for filenames
+        """
+        self._validate_character_name(profile.name)
+
+        path = self._loader.config_dir / "characters" / f"{profile.name}.yaml"
+        self.save_character(profile)
+        self.clear_cache()
+        return path
+
+    def update_character(self, name: str, profile: CharacterProfile) -> Path:
+        """Update an existing character profile.
+
+        Args:
+            name: Name of the character to update
+            profile: Updated CharacterProfile
+
+        Returns:
+            Path where the character was saved
+        """
+        self._validate_character_name(name)
+
+        path = self._loader.config_dir / "characters" / f"{name}.yaml"
+        self.save_character(profile)
+        self.clear_cache()
+        return path
+
     @classmethod
     def with_config_dir(cls, config_dir: Path) -> Self:
         """Create a service with a specific config directory.

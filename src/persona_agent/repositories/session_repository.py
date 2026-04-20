@@ -6,11 +6,13 @@ for Session entities using SQLite as the backing store.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from persona_agent.core.db_encryption import FernetColumnEncryptor
 from persona_agent.repositories.base import (
     BaseRepository,
     ConnectionError,
@@ -42,6 +44,7 @@ class SessionRepository(BaseRepository[Session, str]):
         super().__init__()
         self.db_path = Path(db_path)
         self._connection: sqlite3.Connection | None = None
+        self._encryptor = FernetColumnEncryptor(os.environ.get("PERSONA_AGENT_DB_ENCRYPTION_KEY"))
 
     async def connect(self) -> None:
         """Establish connection to the SQLite database.
@@ -139,7 +142,7 @@ class SessionRepository(BaseRepository[Session, str]):
                     (
                         entity.session_id,
                         msg.get("role", "user"),
-                        msg.get("content", ""),
+                        self._encryptor.encrypt(msg.get("content", "")),
                         msg.get("timestamp", datetime.now().timestamp()),
                     ),
                 )
@@ -206,7 +209,7 @@ class SessionRepository(BaseRepository[Session, str]):
         return [
             {
                 "role": row["role"],
-                "content": row["content"],
+                "content": self._encryptor.decrypt(row["content"]),
                 "timestamp": row["timestamp"],
             }
             for row in cursor.fetchall()
@@ -258,7 +261,7 @@ class SessionRepository(BaseRepository[Session, str]):
                     (
                         entity.session_id,
                         msg.get("role", "user"),
-                        msg.get("content", ""),
+                        self._encryptor.encrypt(msg.get("content", "")),
                         msg.get("timestamp", datetime.now().timestamp()),
                     ),
                 )

@@ -1,0 +1,28 @@
+{
+  "id": "e2e_proposal",
+  "skill_name": "e2e_skill",
+  "mode": "fix",
+  "original_code": "def execute():\n    pass",
+  "proposed_code": "def execute():\n    try:\n        return True\n    except Exception:\n        return False",
+  "reasoning": "Added retry logic for API timeouts",
+  "created_at": "2026-04-10T07:01:57.174152+00:00",
+  "status": "approved",
+  "reviewed_at": "2026-04-10T07:01:57.188412+00:00",
+  "reviewed_by": "human_admin",
+  "rejection_reason": null,
+  "metrics_at_creation": {
+    "skill_name": "e2e_skill",
+    "total_executions": 5,
+    "successful_executions": 0,
+    "failed_executions": 5,
+    "success_rate": 0.0,
+    "average_execution_time_ms": 500.0,
+    "needs_improvement": true,
+    "is_performing_well": false,
+    "common_errors": {
+      "API timeout": 5
+    },
+    "last_execution": "2026-04-10T07:01:57.174142+00:00"
+  },
+  "parent_proposal_id": null
+}

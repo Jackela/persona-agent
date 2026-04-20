@@ -38,6 +38,11 @@ dependencies = [
     "watchdog>=3.0",
     "typer>=0.9",
     "networkx>=3.0",
+    "fastapi>=0.104",
+    "uvicorn>=0.24",
+    "jinja2>=3.1",
+    "slowapi>=0.1.9",
+    "cryptography>=42.0",
 ]
 
 [project.optional-dependencies]
@@ -87,6 +92,10 @@ select = [
     "SIM", # flake8-simplify
 ]
 ignore = ["E501", "SIM102"]  # Line too long (handled by black), complex ifs
+
+[tool.ruff.lint.per-file-ignores]
+"src/persona_agent/ui/web/server.py" = ["B008"]
+"tests/unit/ui/test_web_server.py" = ["E402"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

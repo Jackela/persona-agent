@@ -134,7 +134,7 @@ dmypy.json
 Thumbs.db
 
 # Project specific
-memory/
+/memory/
 *.db
 *.sqlite3
 .benchmarks/

@@ -30,7 +30,7 @@ class TestCosineSimilarity:
         vec1 = [1.0, 2.0]
         vec2 = [-1.0, -2.0]
         result = cosine_similarity(vec1, vec2)
-        assert result == -1.0
+        assert result == pytest.approx(-1.0)
 
     def test_different_lengths(self):
         """Test error on different length vectors."""

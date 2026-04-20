@@ -91,3 +91,53 @@ def get_embedding_generator() -> EmbeddingGenerator:
     if _embedding_generator is None:
         _embedding_generator = EmbeddingGenerator()
     return _embedding_generator
+
+
+def cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
+    """Calculate cosine similarity between two vectors.
+
+    Args:
+        vec1: First vector
+        vec2: Second vector
+
+    Returns:
+        Cosine similarity in range [-1, 1]
+
+    Raises:
+        ValueError: If vectors have different lengths
+    """
+    if len(vec1) != len(vec2):
+        raise ValueError("Vectors must have the same length")
+
+    dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=True))
+    magnitude1 = sum(a * a for a in vec1) ** 0.5
+    magnitude2 = sum(b * b for b in vec2) ** 0.5
+
+    if magnitude1 == 0 or magnitude2 == 0:
+        return 0.0
+
+    return dot_product / (magnitude1 * magnitude2)
+
+
+def normalize_vector(vec: list[float]) -> list[float]:
+    """Normalize a vector to unit length.
+
+    Args:
+        vec: Vector to normalize
+
+    Returns:
+        Normalized vector (zero vector returns itself)
+    """
+    magnitude = sum(a * a for a in vec) ** 0.5
+    if magnitude == 0:
+        return vec[:]
+    return [a / magnitude for a in vec]
+
+
+def get_embedding_provider() -> EmbeddingGenerator:
+    """Get the global embedding provider instance (alias for get_embedding_generator).
+
+    Returns:
+        Singleton EmbeddingGenerator instance
+    """
+    return get_embedding_generator()

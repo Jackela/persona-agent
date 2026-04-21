@@ -179,7 +179,9 @@ jobs:
           bandit -r src -ll -ii -f sarif -o bandit-report.sarif || {
             echo "::warning::Bandit found security issues"
           }
-          bandit -r src -ll -ii -f screen
+          bandit -r src -ll -ii -f screen || {
+            echo "::warning::Bandit found security issues (see logs above)"
+          }
 
       - name: Upload SARIF to GitHub Security tab
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository

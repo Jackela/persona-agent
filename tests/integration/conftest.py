@@ -4,7 +4,6 @@ This module provides fixtures for integration testing that use real service
 instances and temporary SQLite databases instead of mocked dependencies.
 """
 
-import asyncio
 from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
@@ -22,14 +21,6 @@ from persona_agent.utils.llm_client import LLMClient, LLMResponse
 # ============================================================================
 # Event Loop and Async Fixtures
 # ============================================================================
-
-
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 # ============================================================================
@@ -193,7 +184,7 @@ def test_characters(temp_config_dir: Path, create_test_character: callable) -> d
 # ============================================================================
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def session_repository(tmp_path: Path) -> AsyncGenerator[SessionRepository, None]:
     """Create a SessionRepository with a temporary database."""
     db_path = tmp_path / "test_sessions.db"
@@ -211,7 +202,7 @@ def character_service(temp_config_dir: Path) -> CharacterService:
     return CharacterService(config_dir=temp_config_dir)
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def session_service(
     tmp_path: Path, session_repository: SessionRepository
 ) -> AsyncGenerator[SessionService, None]:
@@ -253,7 +244,7 @@ def mock_llm_client() -> Mock:
     return mock
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def chat_service(
     temp_config_dir: Path,
     test_characters: dict[str, Path],
@@ -282,7 +273,7 @@ async def chat_service(
 # ============================================================================
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def populated_session(
     session_repository: SessionRepository, test_characters: dict[str, Path]
 ) -> AsyncGenerator[tuple[str, list[dict]], None]:

@@ -154,6 +154,7 @@ Assistant: {assistant_message}
             {"role": "user", "content": prompt},
         ]
 
+        assert self.llm_client is not None
         response = await self.llm_client.chat(messages)
         content = response.content if hasattr(response, "content") else str(response)
 

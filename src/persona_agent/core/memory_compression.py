@@ -162,6 +162,7 @@ Keep the summary under 200 words. Extract 3-7 key facts."""
             {"role": "user", "content": self.COMPRESSION_PROMPT.format(exchanges=exchanges_text)},
         ]
 
+        assert self.llm_client is not None
         response = await self.llm_client.chat(messages)
         content = response.content if hasattr(response, "content") else str(response)
 

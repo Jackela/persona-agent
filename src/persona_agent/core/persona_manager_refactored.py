@@ -464,7 +464,4 @@ class NewArchitecturePersonaManager:
         )
 
 
-# Backward compatibility alias
-PersonaManager = NewArchitecturePersonaManager
-
-__all__ = ["NewArchitecturePersonaManager", "PersonaManager"]
+__all__ = ["NewArchitecturePersonaManager"]

@@ -250,7 +250,7 @@ class NewArchitectureAgentEngine:
             self.current_emotional_state = fused_state.fused_emotional_state
 
             # Step 4: Build dynamic context
-            dynamic_context = self._build_dynamic_context(fused_state)
+            dynamic_context = await self._build_dynamic_context(fused_state)
 
             # Step 5: Store in working memory
             self.hierarchical_memory.working.add_exchange("user", user_input)
@@ -337,12 +337,12 @@ class NewArchitectureAgentEngine:
             working_memory=self.hierarchical_memory.working,
         )
 
-    def _build_dynamic_context(self, fused_state) -> DynamicContext:
+    async def _build_dynamic_context(self, fused_state) -> DynamicContext:
         """Build dynamic context from fused state."""
         # Get relationship state from user modeling if available
         if self.user_modeling:
             try:
-                user_model = self.user_modeling.storage.get_sync(self.session_id)
+                user_model = await self.user_modeling.storage.get(self.session_id)
                 if user_model:
                     relationship = {
                         "intimacy": user_model.intimacy_level,
@@ -407,7 +407,7 @@ class NewArchitectureAgentEngine:
         # Validate if enabled
         if self.consistency_validator and self.enable_validation:
             try:
-                dynamic_context = self._build_dynamic_context(
+                dynamic_context = await self._build_dynamic_context(
                     await self._process_cognitive_emotional(user_input)
                 )
 
@@ -584,7 +584,4 @@ class NewArchitectureAgentEngine:
         return info
 
 
-# Backward compatibility alias
-AgentEngine = NewArchitectureAgentEngine
-
-__all__ = ["NewArchitectureAgentEngine", "AgentEngine"]
+__all__ = ["NewArchitectureAgentEngine"]

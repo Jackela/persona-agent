@@ -90,6 +90,15 @@ class MemoryCompactor:
         """
         self.episodic = episodic_memory
         self.summarizer = summarizer or MemorySummarizer()
+        self._compacting = False
+
+    def is_compacting(self) -> bool:
+        """Check if compaction is currently in progress.
+
+        Returns:
+            True if compaction is running
+        """
+        return self._compacting
 
     async def compact_memories(
         self,
@@ -174,8 +183,10 @@ class MemoryCompactor:
                     if timestamp:
                         if isinstance(timestamp, (int, float)):
                             entry_time = datetime.fromtimestamp(timestamp)
+                        elif isinstance(timestamp, datetime):
+                            entry_time = timestamp.replace(tzinfo=None)
                         else:
-                            entry_time = timestamp
+                            continue
                         if entry_time < cutoff and not mem_dict.get("metadata", {}).get("compacted"):
                             old_memories.append(mem_dict)
             else:
@@ -186,8 +197,10 @@ class MemoryCompactor:
                     if timestamp:
                         if isinstance(timestamp, (int, float)):
                             entry_time = datetime.fromtimestamp(timestamp)
+                        elif isinstance(timestamp, datetime):
+                            entry_time = timestamp.replace(tzinfo=None)
                         else:
-                            entry_time = timestamp
+                            continue
                         if entry_time < cutoff and not mem_dict.get("metadata", {}).get("compacted"):
                             old_memories.append(mem_dict)
 

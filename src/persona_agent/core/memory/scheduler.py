@@ -87,8 +87,12 @@ class AutoCompactionScheduler:
         Returns:
             Number of memories in episodic storage
         """
-        if hasattr(self.compactor.episodic, "_episodes"):
-            episodes = self.compactor.episodic._episodes
+        # Try 'episodic' first (real compactor), then 'episodic_memory' (mock in tests)
+        episodic = getattr(self.compactor, "episodic", None) or getattr(self.compactor, "episodic_memory", None)
+        if episodic is None:
+            return 0
+        if hasattr(episodic, "_episodes"):
+            episodes = episodic._episodes
             if isinstance(episodes, dict):
                 return len(episodes)
             return len(episodes)

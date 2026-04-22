@@ -251,26 +251,117 @@ class AnthropicClient(BaseLLMClient):
                         continue
 
 
+class OllamaClient(BaseLLMClient):
+    """Ollama API client for local LLM inference."""
+
+    def __init__(
+        self,
+        base_url: str | None = None,
+        model: str | None = None,
+    ):
+        """Initialize Ollama client.
+
+        Args:
+            base_url: Ollama API base URL (defaults to OLLAMA_BASE_URL env var or http://localhost:11434)
+            model: Model name (defaults to OLLAMA_MODEL env var or qwen2.5)
+        """
+        self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.default_model = model or os.getenv("OLLAMA_MODEL", "qwen2.5")
+        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=60.0)
+
+    async def chat(
+        self,
+        messages: list[dict[str, str]],
+        model: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+    ) -> LLMResponse:
+        """Send chat request."""
+        payload: dict[str, Any] = {
+            "model": model or self.default_model,
+            "messages": messages,
+            "stream": False,
+            "options": {
+                "temperature": temperature,
+            },
+        }
+        if max_tokens:
+            payload["options"]["num_predict"] = max_tokens
+
+        response = await self.client.post("/api/chat", json=payload)
+        response.raise_for_status()
+
+        data = response.json()
+        content = data["message"]["content"]
+        usage = {
+            "prompt_tokens": data.get("prompt_eval_count", 0),
+            "completion_tokens": data.get("eval_count", 0),
+            "total_tokens": data.get("prompt_eval_count", 0) + data.get("eval_count", 0),
+        }
+
+        return LLMResponse(
+            content=content,
+            model=payload["model"],
+            usage=usage,
+        )
+
+    async def chat_stream(
+        self,
+        messages: list[dict[str, str]],
+        model: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+    ) -> AsyncIterator[str]:
+        """Stream chat response."""
+        payload: dict[str, Any] = {
+            "model": model or self.default_model,
+            "messages": messages,
+            "stream": True,
+            "options": {
+                "temperature": temperature,
+            },
+        }
+        if max_tokens:
+            payload["options"]["num_predict"] = max_tokens
+
+        import json
+
+        async with self.client.stream("POST", "/api/chat", json=payload) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if not line.strip():
+                    continue
+                try:
+                    chunk = json.loads(line)
+                    msg = chunk.get("message", {})
+                    if "content" in msg:
+                        yield msg["content"]
+                except json.JSONDecodeError:
+                    continue
+
+
 class LLMClient:
     """Unified LLM client supporting multiple providers."""
 
     def __init__(
         self,
-        provider: str = "openai",
+        provider: str = "ollama",
         model: str | None = None,
         api_key: str | None = None,
     ):
         """Initialize LLM client.
 
         Args:
-            provider: 'openai', 'anthropic', or 'local'
+            provider: 'ollama', 'openai', 'anthropic', or 'local'
             model: Model name
             api_key: API key
         """
         self.provider = provider
         self.model = model
 
-        if provider == "openai":
+        if provider == "ollama":
+            self._client = OllamaClient(model=model)
+        elif provider == "openai":
             self._client = OpenAIClient(api_key)
         elif provider == "anthropic":
             self._client = AnthropicClient(api_key)

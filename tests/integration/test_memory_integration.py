@@ -14,9 +14,13 @@ from persona_agent.core.hierarchical_memory import (
     HierarchicalMemory,
     WorkingMemory,
 )
-from persona_agent.core.memory.compaction import CompactionResult, MemoryCompactor
-from persona_agent.core.memory.scheduler import AutoCompactionScheduler, SchedulerConfig
-from persona_agent.core.memory.summarizer import MemorySummarizer
+from persona_agent.core.memory import (
+    AutoCompactionScheduler,
+    CompactionResult,
+    MemoryCompactor,
+    MemorySummarizer,
+    SchedulerConfig,
+)
 
 
 @pytest.fixture

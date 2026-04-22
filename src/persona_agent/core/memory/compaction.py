@@ -63,10 +63,11 @@ class MemorySummarizer:
             content = mem.get("content", "")
             memory_texts.append(f"{i}. {content}")
 
+        memories_text = "\n".join(memory_texts)
         prompt = f"""Summarize the following conversation memories into a concise summary.
 
 Memories:
-{"\n".join(memory_texts)}
+{memories_text}
 
 Provide a brief summary (max {max_length} chars) capturing the key points and themes."""
 

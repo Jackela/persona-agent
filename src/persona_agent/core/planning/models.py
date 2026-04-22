@@ -135,7 +135,7 @@ class Task:
     dependencies: list[str] = field(default_factory=list)
     result: TaskResult | None = None
     error_message: str | None = None
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     started_at: datetime | None = None
     completed_at: datetime | None = None
     max_retries: int = 1
@@ -311,7 +311,7 @@ class Plan:
     tasks: dict[str, Task] = field(default_factory=dict)
     status: PlanStatus = field(default=PlanStatus.CREATED)
     context: dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
     current_task_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)

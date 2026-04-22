@@ -21,6 +21,7 @@ class CompactionResult:
     compacted_count: int
     summaries_created: int
     bytes_saved: int
+    compaction_ratio: float = 0.0
 
 
 class MemorySummarizer:

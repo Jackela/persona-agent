@@ -95,9 +95,7 @@ jobs:
 
       - name: Type check with mypy (strict)
         run: |
-          # Note: Using || true to allow CI to pass despite type errors
-          # Type hints are a work in progress for this codebase
-          mypy src --show-error-codes --config-file=mypy.ini || true
+          mypy src --show-error-codes
 
   # ============================================
   # Test Suite (Matrix across Python versions)
@@ -131,11 +129,11 @@ jobs:
 
       - name: Run tests with pytest
         run: |
-          # Run unit tests only (faster, more reliable)
-          PYTHONPATH="${PYTHONPATH}:$(pwd)/src" pytest tests/unit -v --timeout=60
+          # Run unit tests with coverage
+          PYTHONPATH="${PYTHONPATH}:$(pwd)/src" pytest tests/unit -v --timeout=60 --cov=src/persona_agent --cov-report=xml
           
           # Run integration tests separately (slower, more thorough)
-          PYTHONPATH="${PYTHONPATH}:$(pwd)/src" pytest tests/integration -v --timeout=120 || true
+          PYTHONPATH="${PYTHONPATH}:$(pwd)/src" pytest tests/integration -v --timeout=120 --cov=src/persona_agent --cov-report=xml --cov-append
         env:
           PYTEST_CURRENT_TEST: "1"
 
@@ -143,7 +141,7 @@ jobs:
         uses: codecov/codecov-action@v4
         if: matrix.python-version == '3.12'
         with:
-          file: ./coverage.xml
+          files: ./coverage.xml
           fail_ci_if_error: false
           verbose: true
         env:

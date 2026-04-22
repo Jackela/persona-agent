@@ -97,9 +97,9 @@ async def _chat_async(
                     return
 
             # Validate we have a persona
+            character_service = CharacterService()
             if not persona:
                 # Try to get default from character service
-                character_service = CharacterService()
                 available = character_service.list_characters()
                 if available:
                     persona = available[0]
@@ -108,7 +108,6 @@ async def _chat_async(
                     return
 
             # Get character info for display
-            character_service = CharacterService()
             try:
                 char = character_service.get_character(persona)
             except CharacterNotFoundError:

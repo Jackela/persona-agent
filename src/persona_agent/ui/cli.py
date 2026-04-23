@@ -97,9 +97,9 @@ async def _chat_async(
                     return
 
             # Validate we have a persona
+            character_service = CharacterService()
             if not persona:
                 # Try to get default from character service
-                character_service = CharacterService()
                 available = character_service.list_characters()
                 if available:
                     persona = available[0]
@@ -108,7 +108,6 @@ async def _chat_async(
                     return
 
             # Get character info for display
-            character_service = CharacterService()
             try:
                 char = character_service.get_character(persona)
             except CharacterNotFoundError:
@@ -174,6 +173,77 @@ async def _chat_async(
         except Exception as e:
             logger.exception(f"Unexpected chat error: {e}")
             formatter.print_error(f"An unexpected error occurred: {e}")
+
+
+@cli.group()
+def plan() -> None:
+    """Manage execution plans."""
+    pass
+
+
+@plan.command("create")
+@click.argument("goal")
+@click.option(
+    "--execute/--no-execute",
+    default=True,
+    help="Execute the plan immediately",
+)
+def plan_create(goal: str, execute: bool) -> None:
+    """Create a new plan for a goal."""
+    asyncio.run(_plan_create_async(goal, execute))
+
+
+async def _plan_create_async(goal: str, execute: bool) -> None:
+    """Async implementation of plan create."""
+    from persona_agent.core.agent_engine import AgentEngine
+    from persona_agent.core.planning import PlanExecutor, PlanningEngine
+    from persona_agent.utils.llm_client import LLMClient
+
+    formatter = OutputFormatter(console)
+
+    try:
+        # Initialize engine
+        llm_client = LLMClient(provider="openai")
+        agent_engine = AgentEngine(llm_client=llm_client)
+
+        # Create plan
+        planning_engine = PlanningEngine(agent_engine)
+        plan = await planning_engine.create_plan(goal)
+
+        formatter.print_success(f"Created plan: {plan.id}")
+        formatter.print_info(f"Goal: {plan.goal}")
+        formatter.print_info(f"Tasks: {len(plan.tasks)}")
+
+        for task_id in plan.get_task_order():
+            task = plan.tasks[task_id]
+            deps = f" (depends on: {', '.join(task.dependencies)})" if task.dependencies else ""
+            console.print(f"  • {task_id}: {task.description}{deps}")
+
+        if execute:
+            formatter.print_info("\nExecuting plan...")
+            plan_executor = PlanExecutor(agent_engine)
+
+            def on_progress(plan_id: str, task_id: str, pct: int) -> None:
+                console.print(f"  Progress: {pct}% (task: {task_id})")
+
+            results = await plan_executor.execute_plan(plan, on_progress=on_progress)
+
+            if results["status"] == "completed":
+                formatter.print_success("\nPlan completed successfully!")
+            else:
+                formatter.print_error(f"\nPlan failed. Status: {results['status']}")
+
+    except Exception as e:
+        logger.error(f"Plan creation failed: {e}")
+        formatter.print_error(f"Failed to create plan: {e}")
+
+
+@plan.command("status")
+@click.argument("plan_id")
+def plan_status(plan_id: str) -> None:
+    """Show the status of a plan."""
+    console.print(f"Plan status: {plan_id}")
+    console.print("[dim]Not yet implemented[/dim]")
 
 
 @cli.group()
@@ -370,6 +440,177 @@ def validate_config_cmd(dir: str) -> None:
 
     if not is_valid:
         sys.exit(1)
+
+
+@cli.group()
+def skill() -> None:
+    """Manage skills and skill evolution."""
+    pass
+
+
+@skill.command("list")
+def skill_list() -> None:
+    """List all registered skills."""
+    from persona_agent.skills.registry import get_registry
+
+    registry = get_registry()
+
+    skills = registry.list_skills()
+
+    if not skills:
+        console.print("[dim]No skills registered.[/dim]")
+        return
+
+    console.print("\n[bold]Registered Skills:[/bold]\n")
+    for skill_info in skills:
+        status = "[green]●[/green]" if skill_info["enabled"] else "[red]●[/red]"
+        loaded = "[green]loaded[/green]" if skill_info["loaded"] else "[dim]not loaded[/dim]"
+        console.print(f"  {status} {skill_info['name']} [dim]({loaded})[/dim]")
+        console.print(f"     {skill_info['description']}")
+        console.print()
+
+
+@skill.group()
+def evolution() -> None:
+    """Manage skill evolution."""
+    pass
+
+
+@evolution.command("status")
+@click.argument("skill_name", required=False)
+def evolution_status(skill_name: str | None) -> None:
+    """Show evolution status for skills."""
+    from persona_agent.skills.evolution import SkillEvolutionTracker
+
+    formatter = OutputFormatter(console)
+    tracker = SkillEvolutionTracker()
+
+    if skill_name:
+        metrics = tracker.get_metrics(skill_name)
+        if not metrics:
+            formatter.print_warning(f"No metrics for skill '{skill_name}'")
+            return
+
+        console.print(f"\n[bold]Skill:[/bold] {skill_name}\n")
+        console.print(f"  Total executions: {metrics.total_executions}")
+        console.print(f"  Success rate: {metrics.success_rate:.1%}")
+        console.print(f"  Avg execution time: {metrics.average_execution_time_ms:.0f}ms")
+
+        if metrics.needs_improvement:
+            console.print("\n  [yellow]⚠ This skill needs improvement[/yellow]")
+            rec_mode = tracker.get_recommended_mode(skill_name)
+            if rec_mode:
+                console.print(f"  [dim]Recommended mode: {rec_mode}[/dim]")
+    else:
+        stats = tracker.get_statistics()
+        console.print("\n[bold]Evolution Statistics:[/bold]\n")
+        console.print(f"  Skills tracked: {stats['total_skills_tracked']}")
+        console.print(f"  Need evolution: {stats['skills_needing_evolution']}")
+        console.print(f"  Overall success rate: {stats['overall_success_rate']:.1%}")
+
+
+@evolution.command("propose")
+@click.argument("skill_name")
+@click.option(
+    "--mode",
+    type=click.Choice(["fix", "derived"]),
+    default="fix",
+    help="Evolution mode",
+)
+def evolution_propose(skill_name: str, mode: str) -> None:
+    """Generate an evolution proposal for a skill."""
+    console.print(f"[dim]Generating {mode} proposal for {skill_name}...[/dim]")
+    console.print("[yellow]Not yet implemented[/yellow]")
+
+
+@evolution.command("list")
+def evolution_list() -> None:
+    """List pending evolution proposals."""
+    console.print("[dim]Listing evolution proposals...[/dim]")
+    console.print("[yellow]Not yet implemented[/yellow]")
+
+
+@cli.group()
+def memory() -> None:
+    """Manage memory and compaction."""
+    pass
+
+
+@memory.command("compact")
+@click.option(
+    "--older-than-days",
+    "-d",
+    type=int,
+    default=7,
+    help="Only compact memories older than this many days",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Show what would be compacted without doing it",
+)
+def memory_compact(older_than_days: int, dry_run: bool) -> None:
+    """Compact old memories to save space."""
+    from persona_agent.core.hierarchical_memory import HierarchicalMemory
+    from persona_agent.core.memory import MemoryCompactor
+
+    formatter = OutputFormatter(console)
+
+    async def _compact() -> None:
+        try:
+            # Initialize memory system
+            hierarchical = HierarchicalMemory()
+            compactor = MemoryCompactor(hierarchical.episodic)
+
+            memory_count = len(hierarchical.episodic._episodes)
+            console.print(f"\nCurrent memory count: {memory_count}")
+            console.print(f"Compaction threshold: {older_than_days} days\n")
+
+            if dry_run:
+                console.print("[dim]Dry run mode - no changes will be made[/dim]")
+                return
+
+            result = await compactor.compact_memories(older_than_days=older_than_days)
+
+            if result.compacted_count > 0:
+                formatter.print_success(
+                    f"Compacted {result.compacted_count} memories into "
+                    f"{result.summaries_created} summaries"
+                )
+                console.print(f"  Estimated bytes saved: {result.bytes_saved}")
+                console.print(f"  Compaction ratio: {result.compaction_ratio:.1%}")
+            else:
+                console.print("[dim]No memories needed compaction.[/dim]")
+
+        except Exception as e:
+            logger.error(f"Compaction failed: {e}")
+            formatter.print_error(f"Compaction failed: {e}")
+
+    asyncio.run(_compact())
+
+
+@memory.command("stats")
+def memory_stats() -> None:
+    """Show memory statistics."""
+    from persona_agent.core.hierarchical_memory import HierarchicalMemory
+
+    formatter = OutputFormatter(console)
+
+    try:
+        hierarchical = HierarchicalMemory()
+        stats = hierarchical.get_stats()
+
+        console.print("\n[bold]Memory Statistics:[/bold]\n")
+        console.print(f"  Working memory: {stats['working']['exchanges']} exchanges")
+        console.print(f"  Episodic memory: {stats['episodic']['total_episodes']} episodes")
+        console.print(f"  Semantic memory: {stats['semantic']['entities']} entities")
+        console.print(f"    Facts: {stats['semantic']['facts']}")
+        console.print(f"    Relations: {stats['semantic']['relations']}")
+        console.print()
+
+    except Exception as e:
+        logger.error(f"Failed to get memory stats: {e}")
+        formatter.print_error(f"Failed to get memory stats: {e}")
 
 
 def main() -> None:

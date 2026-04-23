@@ -150,6 +150,15 @@ disable_error_code = ["var-annotated"]
 [[tool.mypy.overrides]]
 module = "persona_agent.config.schemas.character"
 disable_error_code = ["import-untyped", "arg-type"]
+
+[[tool.mypy.overrides]]
+module = "persona_agent.config.schemas.settings"
+disable_error_code = ["import-untyped"]
+
+[[tool.mypy.overrides]]
+module = "persona_agent.services.character_service"
+disable_error_code = ["import-untyped"]
+
 [[tool.mypy.overrides]]
 module = "persona_agent.core.prompt_engine"
 disable_error_code = ["no-untyped-call"]

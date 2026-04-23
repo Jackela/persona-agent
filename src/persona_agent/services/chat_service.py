@@ -26,6 +26,9 @@ from persona_agent.utils.exceptions import (
 )
 from persona_agent.utils.llm_client import LLMClient, LLMResponse
 
+PERSONA_PREFIX = "persona:"
+PERSONA_PREFIX_LEN = len(PERSONA_PREFIX)
+
 
 class ChatServiceError(PersonaAgentError):
     """Base exception for chat service errors."""
@@ -309,9 +312,9 @@ class ChatService:
         if session.messages:
             first_msg = session.messages[0]
             if first_msg.get("role") == "system" and first_msg.get("content", "").startswith(
-                "persona:"
+                PERSONA_PREFIX
             ):
-                persona_name = first_msg["content"][8:]  # Remove "persona:" prefix
+                persona_name = first_msg["content"][PERSONA_PREFIX_LEN:]
 
         # Get character profile
         try:
@@ -424,14 +427,14 @@ class ChatService:
 
         # Update first system message with new persona
         if session.messages and session.messages[0].get("role") == "system":
-            session.messages[0]["content"] = f"persona:{persona_name}"
+            session.messages[0]["content"] = f"{PERSONA_PREFIX}{persona_name}"
         else:
             # Insert persona marker at the beginning
             session.messages.insert(
                 0,
                 {
                     "role": "system",
-                    "content": f"persona:{persona_name}",
+                    "content": f"{PERSONA_PREFIX}{persona_name}",
                     "timestamp": datetime.now().timestamp(),
                 },
             )
@@ -482,9 +485,9 @@ class ChatService:
         if session.messages:
             first_msg = session.messages[0]
             if first_msg.get("role") == "system" and first_msg.get("content", "").startswith(
-                "persona:"
+                PERSONA_PREFIX
             ):
-                persona_name = first_msg["content"][8:]
+                persona_name = first_msg["content"][PERSONA_PREFIX_LEN:]
 
         # Get timestamps
         messages = session.messages

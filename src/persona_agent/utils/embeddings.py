@@ -1,8 +1,38 @@
 """Embedding utilities for vector search."""
 
 import logging
+import math
 
 logger = logging.getLogger(__name__)
+
+
+def cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
+    """Calculate cosine similarity between two vectors.
+
+    Args:
+        vec1: First vector
+        vec2: Second vector
+
+    Returns:
+        Cosine similarity score between -1 and 1
+
+    Raises:
+        ValueError: If vectors have different lengths
+    """
+    if not vec1 or not vec2:
+        return 0.0
+
+    if len(vec1) != len(vec2):
+        raise ValueError("Vectors must have the same length")
+
+    dot_product = sum(a * b for a, b in zip(vec1, vec2, strict=True))
+    norm1 = math.sqrt(sum(a * a for a in vec1))
+    norm2 = math.sqrt(sum(b * b for b in vec2))
+
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+
+    return dot_product / (norm1 * norm2)
 
 
 def get_embedding_model():
@@ -91,3 +121,25 @@ def get_embedding_generator() -> EmbeddingGenerator:
     if _embedding_generator is None:
         _embedding_generator = EmbeddingGenerator()
     return _embedding_generator
+
+
+def get_embedding_provider():
+    """Get embedding provider (alias for get_embedding_model)."""
+    return get_embedding_model()
+
+
+def normalize_vector(vec: list[float]) -> list[float]:
+    """Normalize a vector to unit length.
+
+    Args:
+        vec: Vector to normalize
+
+    Returns:
+        Normalized vector
+    """
+    import math
+
+    norm = math.sqrt(sum(x * x for x in vec))
+    if norm == 0:
+        return vec[:]
+    return [x / norm for x in vec]

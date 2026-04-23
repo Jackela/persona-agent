@@ -369,3 +369,89 @@ class TestMemoryStoreEdgeCases:
         assert len(memories2) == 1
         assert memories1[0].user_message == "Message 1"
         assert memories2[0].user_message == "Message 2"
+
+
+class TestMemoryStoreV2Compression:
+    """Tests for MemoryStoreV2 compression tracking."""
+
+    @pytest.fixture
+    def v2_store(self, tmp_path):
+        """Create a MemoryStoreV2 with compression disabled (no LLM)."""
+        from persona_agent.core.memory_store_v2 import MemoryStoreV2
+
+        return MemoryStoreV2(
+            db_path=tmp_path / "test_v2.db",
+            enable_importance_scoring=False,
+            enable_vector_index=False,
+            enable_compression=False,
+        )
+
+    @pytest.mark.asyncio
+    async def test_is_compressed_defaults_to_false(self, v2_store):
+        """Test that newly stored memories are not compressed."""
+        await v2_store.store(
+            session_id="test-session",
+            user_message="Hello",
+            assistant_message="Hi!",
+        )
+
+        memories = await v2_store.retrieve_recent("test-session")
+        assert len(memories) == 1
+        assert memories[0].is_compressed is False
+
+    @pytest.mark.asyncio
+    async def test_is_compressed_persists_after_retrieval(self, v2_store):
+        """Test that is_compressed flag is correctly read from database."""
+        await v2_store.store(
+            session_id="test-session",
+            user_message="Hello",
+            assistant_message="Hi!",
+        )
+
+        import sqlite3
+
+        with sqlite3.connect(v2_store.db_path) as conn:
+            conn.execute(
+                "UPDATE conversations SET is_compressed = 1 WHERE session_id = ?",
+                ("test-session",),
+            )
+            conn.commit()
+
+        memories = await v2_store.retrieve_recent("test-session")
+        assert len(memories) == 1
+        assert memories[0].is_compressed is True
+
+    @pytest.mark.asyncio
+    async def test_compression_stats_tracking(self, v2_store):
+        """Test that compression statistics correctly count compressed memories."""
+        for i in range(5):
+            await v2_store.store(
+                session_id="test-session",
+                user_message=f"Message {i}",
+                assistant_message=f"Response {i}",
+            )
+
+        stats = await v2_store.get_memory_stats("test-session")
+        assert stats["compressed_memories"] == 0
+        assert stats["uncompressed_memories"] == 5
+
+        import sqlite3
+
+        with sqlite3.connect(v2_store.db_path) as conn:
+            conn.execute(
+                """
+                UPDATE conversations
+                SET is_compressed = 1
+                WHERE session_id = ? AND id IN (
+                    SELECT id FROM conversations
+                    WHERE session_id = ?
+                    ORDER BY id LIMIT 2
+                )
+                """,
+                ("test-session", "test-session"),
+            )
+            conn.commit()
+
+        stats = await v2_store.get_memory_stats("test-session")
+        assert stats["compressed_memories"] == 2
+        assert stats["uncompressed_memories"] == 3

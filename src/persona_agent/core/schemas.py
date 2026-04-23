@@ -126,9 +126,19 @@ class CognitiveState(BaseModel):
 class DynamicContext(BaseModel):
     """Dynamic context that changes during conversation (Layer 2)."""
 
-    emotional: EmotionalState = Field(default_factory=EmotionalState)
-    social: RelationshipState = Field(default_factory=RelationshipState)
-    cognitive: CognitiveState = Field(default_factory=CognitiveState)
+    emotional: EmotionalState = Field(
+        default_factory=lambda: EmotionalState(
+            valence=0.0, arousal=0.5, dominance=0.5, intensity=0.5
+        )
+    )
+    social: RelationshipState = Field(
+        default_factory=lambda: RelationshipState(
+            intimacy=0.3, trust=0.3, respect=0.5, familiarity=0.2
+        )
+    )
+    cognitive: CognitiveState = Field(
+        default_factory=lambda: CognitiveState(attention_level=0.8, cognitive_load=0.3)
+    )
 
     # Conversation context
     conversation_turn: int = 0
@@ -157,6 +167,12 @@ class KnowledgeBoundary(BaseModel):
     confidence: float = Field(0.8, ge=0.0, le=1.0)
 
 
+def _default_knowledge_boundary() -> KnowledgeBoundary:
+    return KnowledgeBoundary(
+        known_domains=[], known_entities=[], unknown_domains=[], confidence=0.8
+    )
+
+
 class RetrievedKnowledge(BaseModel):
     """Knowledge retrieved from RoleRAG system."""
 
@@ -178,7 +194,7 @@ class TaskContext(BaseModel):
 class KnowledgeContext(BaseModel):
     """Knowledge and task context (Layer 3)."""
 
-    boundaries: KnowledgeBoundary = Field(default_factory=KnowledgeBoundary)
+    boundaries: KnowledgeBoundary = Field(default_factory=_default_knowledge_boundary)
     retrieved_knowledge: list[RetrievedKnowledge] = Field(default_factory=list)
     task: TaskContext = Field(default_factory=TaskContext)
 

@@ -256,10 +256,6 @@ class MemoryStore:
         # Sort by score and take top results
         scored_memories.sort(key=lambda x: x[0], reverse=True)
         top_rows = scored_memories[:limit]
-        # Sort by score and take top results
-        scored_memories.sort(key=lambda x: x[0], reverse=True)
-        top_rows = scored_memories[:limit]
-        top_rows = scored_memories[:limit]
 
         return [
             Memory(

@@ -17,7 +17,7 @@ import re
 import uuid
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
 try:
@@ -72,7 +72,7 @@ class WorkingMemory:
             {
                 "user": user_msg,
                 "assistant": assistant_msg,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 
@@ -207,7 +207,7 @@ class EpisodicMemory:
             Created MemoryEntry
         """
         entry_id = str(uuid.uuid4())
-        now = datetime.now()
+        now = datetime.now(UTC)
 
         episodic_entry = EpisodicEntry(
             id=entry_id,
@@ -362,7 +362,14 @@ class EpisodicMemory:
             Composite relevance score
         """
         # Time decay factor (exponential decay)
-        age = datetime.now() - memory.timestamp
+        now = datetime.now()
+        # Ensure both datetimes are naive (no timezone) for comparison
+        memory_time = memory.timestamp
+        if memory_time.tzinfo is not None:
+            memory_time = memory_time.replace(tzinfo=None)
+        if now.tzinfo is not None:
+            now = now.replace(tzinfo=None)
+        age = now - memory_time
         age_days = age.total_seconds() / (24 * 3600)
         decay_factor = 0.5 ** (age_days / self.DECAY_HALF_LIFE_DAYS)
 

@@ -74,6 +74,8 @@ class TestFullConversationFlow:
             "哼哼~ 今天天气不错呢！(ゝ∀･)",
             "笨蛋，我当然记得你说过的话啦！",
             "别难过了，有我在呢。",
+            "嗯？还有什么事吗？",
+            "好呀，我陪你！",
         ]
         client.chat = AsyncMock(
             side_effect=[LLMResponse(content=r, model="gpt-4", usage={}) for r in responses]

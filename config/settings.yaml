@@ -1,0 +1,124 @@
+# Persona-Agent Application Settings
+# This is the main configuration file for the persona-agent application
+
+app:
+  name: "Persona Agent"
+  version: "0.1.0"
+  debug: false
+
+# LLM Configuration
+llm:
+  provider: openai
+  model: gpt-4o-mini
+  # api_key: set via OPENAI_API_KEY environment variable
+  timeout_seconds: 60
+  max_retries: 3
+
+# Database Configuration
+database:
+  url: "sqlite:///data/persona_agent.db"
+  pool_size: 5
+  max_overflow: 10
+  echo: false
+
+# Logging Configuration
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  # file: ./logs/persona_agent.log
+  max_bytes: 10000000
+  backup_count: 5
+
+# Session Management
+session:
+  ttl_hours: 168  # 7 days
+  max_messages: 1000
+  auto_save: true
+
+# Planning System Configuration
+planning:
+  enabled: true
+  execution:
+    enabled: true
+    max_workers: 4
+    max_concurrent_tasks: 8
+  retry:
+    max_attempts: 3
+    base_delay_seconds: 1.0
+    max_delay_seconds: 60.0
+    exponential_base: 2.0
+  intent_classification:
+    use_llm: true
+    heuristic_priority: 0.3
+    # llm_model: gpt-4o-mini
+    cache_classifications: true
+    cache_ttl_seconds: 300
+  task_decomposition:
+    max_tasks_per_plan: 20
+    min_task_granularity: 5
+    allow_parallel_subtasks: true
+    require_explicit_dependencies: false
+
+# Memory System Configuration
+memory:
+  enabled: true
+  working:
+    max_exchanges: 10
+    ttl_seconds: 3600
+  episodic:
+    max_episodes: 1000
+    auto_summarize_threshold: 50
+    storage_path: "./data/memory/episodic"
+  semantic:
+    max_entities: 500
+    max_facts_per_entity: 50
+    enable_relation_inference: true
+  compaction:
+    enabled: true
+    older_than_days: 7
+    schedule_hours: 24
+    min_memories_to_compact: 10
+    summary_max_length: 500
+    # llm_model: gpt-4o-mini
+  vector:
+    enabled: true
+    storage_path: "./data/memory/vector"
+    embedding_model: "text-embedding-3-small"
+    collection_name: "memory"
+    similarity_threshold: 0.7
+    max_results: 5
+
+# Skill Evolution Configuration
+skill_evolution:
+  enabled: true
+  success_rate_threshold: 0.7
+  min_executions_before_evolution: 5
+  storage_path: "./data/skill_evolution"
+  modes:
+    fix:
+      enabled: true
+      min_executions: 5
+      auto_trigger: false
+    derived:
+      enabled: true
+      min_executions: 10
+      auto_trigger: false
+    captured:
+      enabled: true
+      min_executions: 3
+      auto_trigger: false
+  metrics:
+    max_history_size: 100
+    track_execution_time: true
+    track_user_feedback: true
+    success_rate_window: 50
+  proposals:
+    max_proposals_per_skill: 3
+    proposal_expiry_hours: 168
+    require_human_approval: true
+    auto_activate_approved: false
+  llm_generation:
+    # model: gpt-4o-mini
+    temperature: 0.2
+    max_tokens: 4096
+    timeout_seconds: 60

@@ -200,11 +200,11 @@ class FileReadTool(Tool):
             resolved = path.resolve()
             working_resolved = Path(working_dir).resolve()
 
-            # Check for path traversal attacks
-            if not str(resolved).startswith(str(working_resolved)):
+            try:
+                resolved.relative_to(working_resolved)
+                return True, None
+            except ValueError:
                 return False, "Path traversal detected: path is outside working directory"
-
-            return True, None
         except Exception as e:
             return False, f"Invalid path: {e}"
 

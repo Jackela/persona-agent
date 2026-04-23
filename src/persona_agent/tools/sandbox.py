@@ -25,7 +25,7 @@ class SandboxConfig:
 
     # Time limits
     timeout_seconds: float = 30.0
-    cpu_time_limit_seconds: float = 10.0
+    cpu_time_limit_seconds: int = 10
 
     # Memory limits
     max_memory_mb: int = 128

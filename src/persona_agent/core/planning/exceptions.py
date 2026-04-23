@@ -64,7 +64,7 @@ class TaskExecutionError(PlanningError):
         self.task_id = task_id
         self.attempt = attempt
         self.max_retries = max_retries
-        self.can_retry = attempt < max_retries
+        self.can_retry = attempt <= max_retries
 
 
 class DependencyError(PlanningError):

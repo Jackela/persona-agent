@@ -314,16 +314,11 @@ class MemoryStoreV2(MemoryStore):
             return []
 
         placeholders = ",".join("?" * len(memory_ids))
+        query = f"SELECT * FROM conversations WHERE id IN ({placeholders})"
 
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
-                f"""
-                SELECT * FROM conversations
-                WHERE id IN ({placeholders})
-                """,
-                memory_ids,
-            )
+            cursor = conn.execute(query, memory_ids)
             rows = cursor.fetchall()
 
         return [self._row_to_enhanced_memory(row) for row in rows]
@@ -352,16 +347,14 @@ class MemoryStoreV2(MemoryStore):
                 where_clauses.append("importance_score >= ?")
                 params.append(str(min_importance))
 
-            where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+            query_parts = ["SELECT * FROM conversations"]
+            if where_clauses:
+                query_parts.append("WHERE")
+                query_parts.append(" AND ".join(where_clauses))
+            query_parts.append("ORDER BY timestamp DESC")
+            query = " ".join(query_parts)
 
-            cursor = conn.execute(
-                f"""  # nosec B608
-                SELECT * FROM conversations
-                {where_sql}
-                ORDER BY timestamp DESC
-                """,
-                params,
-            )
+            cursor = conn.execute(query, params)
             rows = cursor.fetchall()
 
         # Score by keyword matches

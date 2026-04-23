@@ -167,9 +167,7 @@ class SkillEvolutionConfig(BaseModel):
 
     @field_validator("llm_generation", mode="before")
     @classmethod
-    def validate_llm_generation(
-        cls, v: dict | LLMGenerationConfig | None
-    ) -> LLMGenerationConfig:
+    def validate_llm_generation(cls, v: dict | LLMGenerationConfig | None) -> LLMGenerationConfig:
         """Handle both dict and object inputs."""
         if v is None:
             return LLMGenerationConfig()

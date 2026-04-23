@@ -116,7 +116,6 @@ class AgentEngine:
             await self._store_exchange(user_input, skill_result.response)
             return skill_result.response
 
-        # Check if planning is needed
         if enable_planning and await self.planning_engine.should_plan(user_input):
             return await self._handle_with_planning(user_input, on_plan_progress)
 
@@ -172,7 +171,6 @@ class AgentEngine:
         self._active_plans[plan.id] = plan
 
         try:
-            # Execute plan
             results = await self.plan_executor.execute_plan(
                 plan,
                 on_progress=on_progress,

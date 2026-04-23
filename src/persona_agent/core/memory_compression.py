@@ -192,9 +192,7 @@ Keep the summary under 200 words. Extract 3-7 key facts."""
                 imp_range = (3, 3)
 
             # Extract timestamps
-            timestamps = [
-                m.get("timestamp", 0) for m in memories if "timestamp" in m
-            ]
+            timestamps = [m.get("timestamp", 0) for m in memories if "timestamp" in m]
             time_range = (min(timestamps), max(timestamps)) if timestamps else (0, 0)
 
             return CompressedMemory(
@@ -231,7 +229,9 @@ Keep the summary under 200 words. Extract 3-7 key facts."""
                     f"Assistant: {mem.get('assistant_message', '')}"
                 )
 
-        summary = "\n\n".join(important_exchanges) if important_exchanges else "[Conversation history]"
+        summary = (
+            "\n\n".join(important_exchanges) if important_exchanges else "[Conversation history]"
+        )
 
         # Extract key facts from high-importance memories
         key_facts = []
@@ -249,14 +249,11 @@ Keep the summary under 200 words. Extract 3-7 key facts."""
         else:
             imp_range = (3, 3)
 
-        timestamps = [
-            m.get("timestamp", 0) for m in memories if "timestamp" in m
-        ]
+        timestamps = [m.get("timestamp", 0) for m in memories if "timestamp" in m]
         time_range = (min(timestamps), max(timestamps)) if timestamps else (0, 0)
 
         original_chars = sum(
-            len(m.get("user_message", "")) + len(m.get("assistant_message", ""))
-            for m in memories
+            len(m.get("user_message", "")) + len(m.get("assistant_message", "")) for m in memories
         )
         compressed_chars = len(summary)
         ratio = original_chars / max(compressed_chars, 1)
@@ -303,8 +300,8 @@ Keep the summary under 200 words. Extract 3-7 key facts."""
         to_compress_indices.sort()  # Restore original order
 
         # Group consecutive memories for better compression
-        groups = []
-        current_group = []
+        groups: list[list[dict[str, Any]]] = []
+        current_group: list[int] = []
 
         for idx in to_compress_indices:
             if not current_group or idx == current_group[-1] + 1:

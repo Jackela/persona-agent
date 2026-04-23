@@ -166,47 +166,36 @@ class MemoryCompactor:
         )
 
     def _get_memories_older_than(self, cutoff: datetime) -> list[dict[str, Any]]:
-        """Get memories older than cutoff date.
-
-        Args:
-            cutoff: Datetime cutoff
-
-        Returns:
-            List of memory dictionaries
-        """
         old_memories = []
-        # Access internal episodes dict if available
         if hasattr(self.episodic, "_episodes"):
             episodes = self.episodic._episodes
-            if isinstance(episodes, dict):
-                for entry in episodes.values():
-                    mem_dict = self._entry_to_dict(entry)
-                    timestamp = mem_dict.get("timestamp")
-                    if timestamp:
-                        if isinstance(timestamp, (int, float)):
-                            entry_time = datetime.fromtimestamp(timestamp)
-                        elif isinstance(timestamp, datetime):
-                            entry_time = timestamp.replace(tzinfo=None)
-                        else:
-                            continue
-                        if entry_time < cutoff and not mem_dict.get("metadata", {}).get("compacted"):
-                            old_memories.append(mem_dict)
-            else:
-                # Handle list case
-                for entry in episodes:
-                    mem_dict = self._entry_to_dict(entry)
-                    timestamp = mem_dict.get("timestamp")
-                    if timestamp:
-                        if isinstance(timestamp, (int, float)):
-                            entry_time = datetime.fromtimestamp(timestamp)
-                        elif isinstance(timestamp, datetime):
-                            entry_time = timestamp.replace(tzinfo=None)
-                        else:
-                            continue
-                        if entry_time < cutoff and not mem_dict.get("metadata", {}).get("compacted"):
-                            old_memories.append(mem_dict)
-
+            entries = episodes.values() if isinstance(episodes, dict) else episodes
+            for entry in entries:
+                mem_dict = self._entry_to_dict(entry)
+                timestamp = mem_dict.get("timestamp")
+                if not timestamp:
+                    continue
+                entry_time = self._parse_timestamp(timestamp)
+                if (
+                    entry_time
+                    and entry_time < cutoff
+                    and not mem_dict.get("metadata", {}).get("compacted")
+                ):
+                    old_memories.append(mem_dict)
         return sorted(old_memories, key=lambda m: m.get("timestamp", 0))
+
+    def _parse_timestamp(self, timestamp: Any) -> datetime | None:
+        if isinstance(timestamp, datetime):
+            return timestamp.replace(tzinfo=None)
+        if isinstance(timestamp, (int, float)):
+            return datetime.fromtimestamp(timestamp)
+        if isinstance(timestamp, str):
+            try:
+                dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                return dt.replace(tzinfo=None)
+            except (ValueError, AttributeError):
+                return None
+        return None
 
     def _entry_to_dict(self, entry: Any) -> dict[str, Any]:
         """Convert episodic entry to dictionary.
@@ -221,10 +210,14 @@ class MemoryCompactor:
             return entry
 
         # Convert object attributes to dict
+        metadata = getattr(entry, "metadata", {})
+        timestamp = metadata.get("timestamp") if isinstance(metadata, dict) else None
+        if timestamp is None:
+            timestamp = getattr(entry, "timestamp", None)
         return {
             "content": getattr(entry, "content", ""),
-            "timestamp": getattr(entry, "timestamp", None),
-            "metadata": getattr(entry, "metadata", {}),
+            "timestamp": timestamp,
+            "metadata": metadata,
             "entities": getattr(entry, "entities", []),
         }
 
@@ -248,17 +241,11 @@ class MemoryCompactor:
 
         for mem in memories:
             timestamp = mem.get("timestamp")
-            if timestamp:
-                if isinstance(timestamp, (int, float)):
-                    mem_time = datetime.fromtimestamp(timestamp)
-                else:
-                    mem_time = timestamp
-
+            mem_time = self._parse_timestamp(timestamp)
+            if mem_time:
                 # Round to start of window
                 days_since_epoch = mem_time.toordinal()
-                window_start = datetime.fromordinal(
-                    (days_since_epoch // window_days) * window_days
-                )
+                window_start = datetime.fromordinal((days_since_epoch // window_days) * window_days)
                 groups[window_start].append(mem)
 
         return dict(groups)

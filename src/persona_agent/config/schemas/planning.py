@@ -102,16 +102,12 @@ class PlanningSystemConfig(BaseModel):
     """
 
     enabled: bool = True
-    execution: ParallelExecutionConfig = Field(
-        default_factory=ParallelExecutionConfig
-    )
+    execution: ParallelExecutionConfig = Field(default_factory=ParallelExecutionConfig)
     retry: RetryConfig = Field(default_factory=RetryConfig)
     intent_classification: IntentClassificationConfig = Field(
         default_factory=IntentClassificationConfig
     )
-    task_decomposition: TaskDecompositionConfig = Field(
-        default_factory=TaskDecompositionConfig
-    )
+    task_decomposition: TaskDecompositionConfig = Field(default_factory=TaskDecompositionConfig)
 
     @field_validator("execution", mode="before")
     @classmethod

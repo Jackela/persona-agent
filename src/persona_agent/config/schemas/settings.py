@@ -178,9 +178,7 @@ class ApplicationSettings(BaseModel):
 
     @field_validator("planning", mode="before")
     @classmethod
-    def validate_planning(
-        cls, v: dict | PlanningSystemConfig | None
-    ) -> PlanningSystemConfig:
+    def validate_planning(cls, v: dict | PlanningSystemConfig | None) -> PlanningSystemConfig:
         """Handle both dict and object inputs."""
         if v is None:
             return PlanningSystemConfig()
@@ -266,8 +264,13 @@ class ApplicationSettings(BaseModel):
             if isinstance(value, dict) and not isinstance(value, (str, bytes)):
                 # Check if this is a subsystem config (has its own validator)
                 subsystem_keys = [
-                    "llm", "database", "logging", "session",
-                    "planning", "memory", "skill_evolution"
+                    "llm",
+                    "database",
+                    "logging",
+                    "session",
+                    "planning",
+                    "memory",
+                    "skill_evolution",
                 ]
                 if key in subsystem_keys:
                     result[key] = value
@@ -314,7 +317,7 @@ class ApplicationSettings(BaseModel):
         Returns:
             Nested dictionary
         """
-        result = {}
+        result: dict[str, Any] = {}
 
         for key, value in data.items():
             if "." in key:

@@ -226,9 +226,7 @@ class CalculatorTool(MCPTool):
             tree = ast.parse(expression, mode="eval")
 
             def eval_node(node):
-                if isinstance(node, ast.Num):  # Python 3.7 compatibility
-                    return node.n
-                elif isinstance(node, ast.Constant):  # Python 3.8+
+                if isinstance(node, ast.Constant):  # Python 3.8+
                     return node.value
                 elif isinstance(node, ast.BinOp):
                     op_type = type(node.op)

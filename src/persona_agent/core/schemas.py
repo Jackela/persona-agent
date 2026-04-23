@@ -137,9 +137,7 @@ class DynamicContext(BaseModel):
         )
     )
     cognitive: CognitiveState = Field(
-        default_factory=lambda: CognitiveState(
-            attention_level=0.8, cognitive_load=0.3
-        )
+        default_factory=lambda: CognitiveState(attention_level=0.8, cognitive_load=0.3)
     )
 
     # Conversation context
@@ -170,7 +168,9 @@ class KnowledgeBoundary(BaseModel):
 
 
 def _default_knowledge_boundary() -> KnowledgeBoundary:
-    return KnowledgeBoundary(known_domains=[], known_entities=[], unknown_domains=[], confidence=0.8)
+    return KnowledgeBoundary(
+        known_domains=[], known_entities=[], unknown_domains=[], confidence=0.8
+    )
 
 
 class RetrievedKnowledge(BaseModel):

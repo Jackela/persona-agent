@@ -190,8 +190,15 @@ Assistant: {assistant_message}
 
         # Identity indicators (high importance)
         identity_patterns = [
-            "my name is", "i am a", "i work as", "i'm a", "i live in",
-            "i have", "my job is", "i'm married", "i have kids",
+            "my name is",
+            "i am a",
+            "i work as",
+            "i'm a",
+            "i live in",
+            "i have",
+            "my job is",
+            "i'm married",
+            "i have kids",
         ]
         for pattern in identity_patterns:
             if pattern in text:
@@ -205,8 +212,14 @@ Assistant: {assistant_message}
 
         # Preference indicators (medium-high importance)
         preference_patterns = [
-            "i like", "i love", "i hate", "i prefer", "i enjoy",
-            "i don't like", "i dislike", "my favorite",
+            "i like",
+            "i love",
+            "i hate",
+            "i prefer",
+            "i enjoy",
+            "i don't like",
+            "i dislike",
+            "my favorite",
         ]
         for pattern in preference_patterns:
             if pattern in text:
@@ -220,8 +233,14 @@ Assistant: {assistant_message}
 
         # Emotional indicators
         emotion_patterns = [
-            "i feel", "i'm happy", "i'm sad", "i'm angry", "i'm excited",
-            "i'm worried", "i'm stressed", "i'm anxious",
+            "i feel",
+            "i'm happy",
+            "i'm sad",
+            "i'm angry",
+            "i'm excited",
+            "i'm worried",
+            "i'm stressed",
+            "i'm anxious",
         ]
         for pattern in emotion_patterns:
             if pattern in text:
@@ -235,8 +254,12 @@ Assistant: {assistant_message}
 
         # Goal/plan indicators
         goal_patterns = [
-            "i want to", "i plan to", "my goal is", "i'm trying to",
-            "i hope to", "i'm working on",
+            "i want to",
+            "i plan to",
+            "my goal is",
+            "i'm trying to",
+            "i hope to",
+            "i'm working on",
         ]
         for pattern in goal_patterns:
             if pattern in text:

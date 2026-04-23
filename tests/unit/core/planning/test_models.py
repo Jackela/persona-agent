@@ -179,6 +179,7 @@ class TestTask:
         # Simulate execution
         task.mark_started()
         import time
+
         time.sleep(0.01)  # Small delay
         task.mark_completed(TaskResult.success_result())
 

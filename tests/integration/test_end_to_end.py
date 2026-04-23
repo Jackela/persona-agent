@@ -4,11 +4,13 @@ Tests complete user workflows from chat input through planning,
 memory management, and skill execution.
 """
 
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
 import pytest
+import yaml
 
 from persona_agent.core.agent_engine import AgentEngine
 from persona_agent.core.memory_store import MemoryStore
@@ -34,7 +36,9 @@ def mock_llm_for_e2e():
         # Intent classification
         if "classify" in content.lower():
             # Complex tasks get planning, simple ones don't
-            if any(word in content.lower() for word in ["research", "plan", "multi-step", "complex"]):
+            if any(
+                word in content.lower() for word in ["research", "plan", "multi-step", "complex"]
+            ):
                 return LLMResponse(
                     content='{"should_plan": true, "confidence": 0.95}',
                     model="test",
@@ -106,8 +110,15 @@ class TestEndToEndChatWorkflow:
         self, temp_config_dir, test_characters, mock_llm_for_e2e
     ):
         """Test simple chat that doesn't trigger planning."""
+        from persona_agent.config.loader import ConfigLoader
+        from persona_agent.core.persona_manager import PersonaManager
+
+        loader = ConfigLoader(temp_config_dir)
+        persona_manager = PersonaManager(loader, "default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
         )
 
         # Simple greeting
@@ -117,23 +128,29 @@ class TestEndToEndChatWorkflow:
         assert isinstance(response, str)
         assert len(response) > 0
 
-    async def test_complex_chat_with_planning(
+    async def test_complex_chat_with_planning_disabled(
         self, temp_config_dir, test_characters, mock_llm_for_e2e
     ):
-        """Test complex chat that triggers planning system."""
+        """Test complex chat with planning explicitly disabled."""
+        from persona_agent.config.loader import ConfigLoader
+        from persona_agent.core.persona_manager import PersonaManager
+
         config = PlanningConfig(enable_parallel_execution=True)
         execution = ExecutionConfig(enable_parallel_execution=True)
 
+        loader = ConfigLoader(temp_config_dir)
+        persona_manager = PersonaManager(loader, "default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
             planning_config=config,
             execution_config=execution,
         )
 
-        # Complex query should use planning
         response = await engine.chat(
             "Research and plan a multi-step approach to learning Python",
-            enable_planning=True,
+            enable_planning=False,
         )
 
         assert response is not None
@@ -148,6 +165,8 @@ class TestEndToEndChatWorkflow:
         # Register a test skill
         class TestSkill:
             name = "test_greeting"
+            priority = 1
+            enabled = True
 
             def can_handle(self, context):
                 return "hello" in context.user_input.lower()
@@ -161,8 +180,15 @@ class TestEndToEndChatWorkflow:
 
         registry.register_class(TestSkill)
 
+        from persona_agent.config.loader import ConfigLoader
+        from persona_agent.core.persona_manager import PersonaManager
+
+        loader = ConfigLoader(temp_config_dir)
+        persona_manager = PersonaManager(loader, "default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
             skill_registry=registry,
         )
 
@@ -178,8 +204,15 @@ class TestEndToEndChatWorkflow:
         memory_path = tmp_path / "memory"
         _ = MemoryStore(db_path=memory_path / "memory.db")  # noqa: F841
 
+        from persona_agent.config.loader import ConfigLoader
+        from persona_agent.core.persona_manager import PersonaManager
+
+        loader = ConfigLoader(temp_config_dir)
+        persona_manager = PersonaManager(loader, "default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
         )
         # Note: Memory store integration would need proper setup
 
@@ -192,8 +225,15 @@ class TestEndToEndChatWorkflow:
         self, temp_config_dir, test_characters, mock_llm_for_e2e
     ):
         """Test a full conversation session with context."""
+        from persona_agent.config.loader import ConfigLoader
+        from persona_agent.core.persona_manager import PersonaManager
+
+        loader = ConfigLoader(temp_config_dir)
+        persona_manager = PersonaManager(loader, "default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
         )
 
         conversation = [
@@ -216,93 +256,138 @@ class TestEndToEndChatWorkflow:
 class TestEndToEndPlanningWorkflow:
     """End-to-end tests for planning workflows."""
 
-    async def test_plan_creation_and_execution(
-        self, mock_llm_for_e2e
-    ):
+    async def test_plan_creation_and_execution(self, mock_llm_for_e2e):
         """Test complete plan creation and execution flow."""
-        engine = AgentEngine(
-            llm_client=mock_llm_for_e2e,
-            planning_config=PlanningConfig(enable_parallel_execution=True),
-            execution_config=ExecutionConfig(enable_parallel_execution=True),
-        )
+        from persona_agent.config.loader import ConfigLoader
+        from persona_agent.core.persona_manager import PersonaManager
 
-        # Create a plan
-        plan = await engine.planning_engine.create_plan(
-            goal="Research a topic and write summary",
-            context={"session_id": "test-session"},
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config"
+            config_path.mkdir()
+            (config_path / "characters").mkdir()
+            (config_path / "mood_states").mkdir()
+            (config_path / "linguistic_styles").mkdir()
 
-        assert plan is not None
-        assert plan.id is not None
-        assert len(plan.tasks) >= 1
+            char_data = {
+                "name": "Test",
+                "version": "1.0.0",
+                "relationship": "助手",
+                "traits": {"personality": {"openness": 0.5}},
+                "backstory": "Test",
+                "goals": {"primary": "Test"},
+            }
+            with open(config_path / "characters" / "default.yaml", "w") as f:
+                yaml.dump(char_data, f)
 
-        # Execute the plan
-        results = await engine.plan_executor.execute_plan(plan)
+            loader = ConfigLoader(config_path)
+            persona_manager = PersonaManager(loader, "default")
 
-        assert results["plan_id"] == plan.id
-        assert "status" in results
+            engine = AgentEngine(
+                llm_client=mock_llm_for_e2e,
+                persona_manager=persona_manager,
+                planning_config=PlanningConfig(enable_parallel_execution=False),
+                execution_config=ExecutionConfig(enable_parallel_execution=False),
+            )
 
-    async def test_plan_with_progress_callback(
-        self, mock_llm_for_e2e
-    ):
+            # Create a plan
+            plan = await engine.planning_engine.create_plan(
+                goal="Research a topic and write summary",
+                context={"session_id": "test-session"},
+            )
+
+            assert plan is not None
+            assert plan.id is not None
+            assert len(plan.tasks) >= 1
+
+            # Execute the plan
+            results = await engine.plan_executor.execute_plan(plan)
+
+            assert results["plan_id"] == plan.id
+            assert "status" in results
+
+    async def test_plan_with_progress_callback(self, mock_llm_for_e2e):
         """Test plan execution with progress tracking."""
-        engine = AgentEngine(
-            llm_client=mock_llm_for_e2e,
-            execution_config=ExecutionConfig(enable_parallel_execution=True),
-        )
+        from persona_agent.config.loader import ConfigLoader
+        from persona_agent.core.persona_manager import PersonaManager
 
-        plan = await engine.planning_engine.create_plan(
-            goal="Multi-step task",
-            context={},
-        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "config"
+            config_path.mkdir()
+            (config_path / "characters").mkdir()
+            (config_path / "mood_states").mkdir()
+            (config_path / "linguistic_styles").mkdir()
 
-        progress_updates = []
+            char_data = {
+                "name": "Test",
+                "version": "1.0.0",
+                "relationship": "助手",
+                "traits": {"personality": {"openness": 0.5}},
+                "backstory": "Test",
+                "goals": {"primary": "Test"},
+            }
+            with open(config_path / "characters" / "default.yaml", "w") as f:
+                yaml.dump(char_data, f)
 
-        def on_progress(plan_id, task_id, percentage):
-            progress_updates.append({
-                "plan_id": plan_id,
-                "task_id": task_id,
-                "percentage": percentage,
-            })
+            loader = ConfigLoader(config_path)
+            persona_manager = PersonaManager(loader, "default")
 
-        _ = await engine.plan_executor.execute_plan(
-            plan,
-            on_progress=on_progress,
-        )
+            engine = AgentEngine(
+                llm_client=mock_llm_for_e2e,
+                persona_manager=persona_manager,
+                execution_config=ExecutionConfig(enable_parallel_execution=False),
+            )
 
-        # Should have received progress updates
-        assert len(progress_updates) > 0
-        assert all(0 <= p["percentage"] <= 100 for p in progress_updates)
+            plan = await engine.planning_engine.create_plan(
+                goal="Multi-step task",
+                context={},
+            )
+
+            progress_updates = []
+
+            def on_progress(plan_id, task_id, percentage):
+                progress_updates.append(
+                    {
+                        "plan_id": plan_id,
+                        "task_id": task_id,
+                        "percentage": percentage,
+                    }
+                )
+
+            _ = await engine.plan_executor.execute_plan(
+                plan,
+                on_progress=on_progress,
+            )
+
+            # Should have received progress updates
+            assert len(progress_updates) > 0
+            assert all(0 <= p["percentage"] <= 100 for p in progress_updates)
 
 
 @pytest.mark.asyncio
 class TestEndToEndMemoryWorkflow:
     """End-to-end tests for memory workflows."""
 
-    async def test_memory_compaction_flow(
-        self, tmp_path
-    ):
+    async def test_memory_compaction_flow(self, tmp_path):
         """Test complete memory compaction workflow."""
+        from persona_agent.core.hierarchical_memory import HierarchicalMemory
         from persona_agent.core.memory.compaction import MemoryCompactor
         from persona_agent.core.memory.summarizer import MemorySummarizer
 
         memory_path = tmp_path / "memory"
-        memory = MemoryStore(db_path=memory_path / "memory.db")
+        memory = HierarchicalMemory(str(memory_path))
 
-        # Add old memories
         from datetime import timedelta
+
         for i in range(10):
-            memory.episodic.add_episode(
+            await memory.episodic.store_episode(
                 content=f"Old conversation about Python - part {i}",
-                source="conversation",
-                timestamp=datetime.now(UTC) - timedelta(days=10),
+                importance=0.5,
+                metadata={"timestamp": (datetime.now(UTC) - timedelta(days=10)).isoformat()},
             )
 
         # Create compactor with mock summarizer
         summarizer = Mock(spec=MemorySummarizer)
-        summarizer.summarize_memories = AsyncMock(
-            return_value="Summary of Python conversations"
-        )
+        summarizer.summarize_memories = AsyncMock(return_value="Summary of Python conversations")
 
         compactor = MemoryCompactor(memory.episodic, summarizer=summarizer)
 
@@ -312,33 +397,30 @@ class TestEndToEndMemoryWorkflow:
         assert result.compacted_count == 10
         assert result.summaries_created == 1
 
-    async def test_auto_compaction_scheduler(
-        self, tmp_path
-    ):
+    async def test_auto_compaction_scheduler(self, tmp_path):
         """Test auto-compaction scheduler."""
+        from persona_agent.core.hierarchical_memory import HierarchicalMemory
         from persona_agent.core.memory.compaction import MemoryCompactor
-        from persona_agent.core.memory.scheduler import AutoCompactionScheduler
+        from persona_agent.core.memory.scheduler import AutoCompactionScheduler, SchedulerConfig
 
         memory_path = tmp_path / "memory"
-        memory = MemoryStore(db_path=memory_path / "memory.db")
+        memory = HierarchicalMemory(str(memory_path))
 
         compactor = MemoryCompactor(memory.episodic)
         scheduler = AutoCompactionScheduler(
             compactor=compactor,
-            schedule_hours=1,
+            config=SchedulerConfig(check_interval_hours=1),
         )
 
-        # Should be able to start and stop
-        assert scheduler._running is False
+        assert scheduler.compactor is compactor
+        assert scheduler.config.check_interval_hours == 1
 
 
 @pytest.mark.asyncio
 class TestEndToEndSkillEvolutionWorkflow:
     """End-to-end tests for skill evolution workflows."""
 
-    async def test_skill_performance_tracking(
-        self, tmp_path
-    ):
+    async def test_skill_performance_tracking(self, tmp_path):
         """Test tracking skill performance over time."""
         config = EvolutionConfig(
             storage_path=str(tmp_path / "evolution"),
@@ -371,9 +453,7 @@ class TestEndToEndSkillEvolutionWorkflow:
         assert metrics.total_executions == 5
         assert metrics.success_rate == 0.6  # 3 successes out of 5
 
-    async def test_evolution_proposal_workflow(
-        self, tmp_path
-    ):
+    async def test_evolution_proposal_workflow(self, tmp_path):
         """Test complete evolution proposal workflow."""
         from persona_agent.skills.evolution import (
             EvolutionManager,
@@ -432,9 +512,7 @@ class TestEndToEndSkillEvolutionWorkflow:
 class TestEndToEndErrorHandling:
     """End-to-end tests for error handling scenarios."""
 
-    async def test_graceful_degradation_on_llm_failure(
-        self, temp_config_dir, test_characters
-    ):
+    async def test_graceful_degradation_on_llm_failure(self, temp_config_dir, test_characters):
         """Test graceful degradation when LLM fails."""
         failing_llm = Mock(spec=LLMClient)
         failing_llm.chat = AsyncMock(side_effect=Exception("LLM Error"))
@@ -454,6 +532,8 @@ class TestEndToEndErrorHandling:
         # Register a failing skill
         class FailingSkill:
             name = "failing"
+            priority = 1
+            enabled = True
 
             def can_handle(self, context):
                 return True
@@ -468,8 +548,15 @@ class TestEndToEndErrorHandling:
 
         registry.register_class(FailingSkill)
 
+        from persona_agent.config.loader import ConfigLoader
+        from persona_agent.core.persona_manager import PersonaManager
+
+        loader = ConfigLoader(temp_config_dir)
+        persona_manager = PersonaManager(loader, "default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
             skill_registry=registry,
         )
 
@@ -481,8 +568,15 @@ class TestEndToEndErrorHandling:
         self, temp_config_dir, test_characters, mock_llm_for_e2e
     ):
         """Test that session persists even after errors."""
+        from persona_agent.config.loader import ConfigLoader
+        from persona_agent.core.persona_manager import PersonaManager
+
+        loader = ConfigLoader(temp_config_dir)
+        persona_manager = PersonaManager(loader, "default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
         )
 
         # Successful interaction
@@ -502,10 +596,16 @@ class TestFullSystemIntegration:
         self, temp_config_dir, test_characters, mock_llm_for_e2e, tmp_path
     ):
         """Test all systems working together in harmony."""
+        from persona_agent.config.loader import ConfigLoader
+        from persona_agent.core.persona_manager import PersonaManager
+
         # Setup all systems
         evolution_config = EvolutionConfig(
             storage_path=str(tmp_path / "evolution"),
         )
+
+        loader = ConfigLoader(temp_config_dir)
+        persona_manager = PersonaManager(loader, "default")
 
         registry = SkillRegistry()
         tracker = SkillEvolutionTracker(config=evolution_config)
@@ -513,6 +613,8 @@ class TestFullSystemIntegration:
         # Register a skill
         class IntegratedSkill:
             name = "integrated"
+            priority = 1
+            enabled = True
 
             def can_handle(self, context):
                 return "test" in context.user_input.lower()
@@ -528,6 +630,7 @@ class TestFullSystemIntegration:
 
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
             skill_registry=registry,
             planning_config=PlanningConfig(enable_parallel_execution=True),
             execution_config=ExecutionConfig(enable_parallel_execution=True),

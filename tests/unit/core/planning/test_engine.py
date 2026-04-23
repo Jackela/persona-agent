@@ -131,10 +131,10 @@ class TestTaskDecomposer:
     @pytest.mark.asyncio
     async def test_decompose_success(self, mock_llm):
         """Test successful task decomposition."""
-        response_content = '''{"tasks": [
+        response_content = """{"tasks": [
             {"id": "task_1", "description": "Search for Python docs", "dependencies": []},
             {"id": "task_2", "description": "Read about asyncio", "dependencies": ["task_1"]}
-        ], "reasoning": "Need to find docs first"}'''
+        ], "reasoning": "Need to find docs first"}"""
 
         mock_llm.chat.return_value = LLMResponse(content=response_content, model="test")
 
@@ -155,7 +155,7 @@ class TestTaskDecomposer:
         """Test decomposition with context."""
         mock_llm.chat.return_value = LLMResponse(
             content='{"tasks": [{"id": "task_1", "description": "Do something", "dependencies": []}]}',
-            model="test"
+            model="test",
         )
 
         decomposer = TaskDecomposer(mock_llm)
@@ -182,10 +182,7 @@ class TestTaskDecomposer:
     @pytest.mark.asyncio
     async def test_decompose_missing_tasks_key(self, mock_llm):
         """Test handling of missing tasks key."""
-        mock_llm.chat.return_value = LLMResponse(
-            content='{"result": "something"}',
-            model="test"
-        )
+        mock_llm.chat.return_value = LLMResponse(content='{"result": "something"}', model="test")
 
         decomposer = TaskDecomposer(mock_llm)
 
@@ -205,9 +202,9 @@ class TestTaskDecomposer:
     @pytest.mark.asyncio
     async def test_decompose_with_markdown_code_block(self, mock_llm):
         """Test extraction from markdown code block."""
-        response_content = '''```json
+        response_content = """```json
         {"tasks": [{"id": "task_1", "description": "Do it", "dependencies": []}]}
-        ```'''
+        ```"""
 
         mock_llm.chat.return_value = LLMResponse(content=response_content, model="test")
 
@@ -221,11 +218,11 @@ class TestTaskDecomposer:
         decomposer = TaskDecomposer(AsyncMock())
 
         # With json tag
-        content = "```json\n{\"key\": \"value\"}\n```"
+        content = '```json\n{"key": "value"}\n```'
         assert decomposer._extract_json(content) == '{"key": "value"}'
 
         # Without json tag
-        content = "```\n{\"key\": \"value\"}\n```"
+        content = '```\n{"key": "value"}\n```'
         assert decomposer._extract_json(content) == '{"key": "value"}'
 
         # Plain JSON
@@ -243,9 +240,9 @@ class TestPlanRefiner:
     @pytest.mark.asyncio
     async def test_refine_success(self, mock_llm):
         """Test successful plan refinement."""
-        response_content = '''{"approach": "alternative", "reasoning": "Try different method", "new_tasks": [
+        response_content = """{"approach": "alternative", "reasoning": "Try different method", "new_tasks": [
             {"id": "task_alt", "description": "Try alternative approach", "dependencies": []}
-        ]}'''
+        ]}"""
 
         mock_llm.chat.return_value = LLMResponse(content=response_content, model="test")
 
@@ -312,9 +309,7 @@ class TestPlanningEngine:
     @pytest.mark.asyncio
     async def test_should_plan_uses_classifier(self, mock_agent_engine):
         """Test uses intent classifier."""
-        mock_agent_engine.llm_client.chat.return_value = LLMResponse(
-            content="TRUE", model="test"
-        )
+        mock_agent_engine.llm_client.chat.return_value = LLMResponse(content="TRUE", model="test")
 
         engine = PlanningEngine(mock_agent_engine)
         result = await engine.should_plan("Complex multi-step task")
@@ -324,10 +319,10 @@ class TestPlanningEngine:
     @pytest.mark.asyncio
     async def test_create_plan_success(self, mock_agent_engine):
         """Test successful plan creation."""
-        response_content = '''{"tasks": [
+        response_content = """{"tasks": [
             {"id": "task_1", "description": "Step 1", "dependencies": []},
             {"id": "task_2", "description": "Step 2", "dependencies": ["task_1"]}
-        ]}'''
+        ]}"""
 
         mock_agent_engine.llm_client.chat.return_value = LLMResponse(
             content=response_content, model="test"
@@ -353,8 +348,7 @@ class TestPlanningEngine:
     async def test_create_plan_empty_tasks(self, mock_agent_engine):
         """Test error when no tasks generated."""
         mock_agent_engine.llm_client.chat.return_value = LLMResponse(
-            content='{"tasks": []}',
-            model="test"
+            content='{"tasks": []}', model="test"
         )
 
         engine = PlanningEngine(mock_agent_engine)
@@ -365,9 +359,9 @@ class TestPlanningEngine:
     @pytest.mark.asyncio
     async def test_refine_plan(self, mock_agent_engine):
         """Test plan refinement."""
-        refinement_response = '''{"approach": "alternative", "reasoning": "Retry with timeout", "new_tasks": [
+        refinement_response = """{"approach": "alternative", "reasoning": "Retry with timeout", "new_tasks": [
             {"id": "task_retry", "description": "Retry with longer timeout", "dependencies": []}
-        ]}'''
+        ]}"""
 
         mock_agent_engine.llm_client.chat.return_value = LLMResponse(
             content=refinement_response, model="test"

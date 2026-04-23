@@ -23,7 +23,7 @@ from persona_agent.skills.registry import SkillRegistry
 
 
 @pytest.fixture
-def evolution_config():
+def evolution_config(tmp_path: Path):
     """Create an evolution configuration for testing."""
     return EvolutionConfig(
         enabled=True,
@@ -31,7 +31,7 @@ def evolution_config():
         success_rate_threshold=0.7,
         max_proposals_per_skill=2,
         proposal_expiry_hours=24.0,
-        storage_path="./test_data/skill_evolution",
+        storage_path=str(tmp_path / "skill_evolution"),
     )
 
 
@@ -211,7 +211,9 @@ class TestSkillEvolutionTrackerIntegration:
                 "good_skill", context, SkillResult(success=True, response="OK")
             )
             tracker.record_execution(
-                "bad_skill", context, SkillResult(success=False, response="", data={"error": "fail"})
+                "bad_skill",
+                context,
+                SkillResult(success=False, response="", data={"error": "fail"}),
             )
 
         skills_needing_evolution = tracker.get_skills_needing_evolution()
@@ -475,7 +477,9 @@ class TestEvolutionWithSkillRegistry:
         assert metrics is not None
         assert metrics.total_executions == 1
 
-    async def test_evolution_proposal_can_reference_skill(self, temp_evolution_dir, mock_skill_class):
+    async def test_evolution_proposal_can_reference_skill(
+        self, temp_evolution_dir, mock_skill_class
+    ):
         """Test that evolution proposals can reference registered skills."""
         registry = SkillRegistry()
         registry.register_class(mock_skill_class)

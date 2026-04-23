@@ -174,9 +174,7 @@ class TestMemoryCompactionIntegration:
 
         # Mock summarizer
         mock_summarizer = Mock(spec=MemorySummarizer)
-        mock_summarizer.summarize_memories = AsyncMock(
-            return_value="Summary of old episodes"
-        )
+        mock_summarizer.summarize_memories = AsyncMock(return_value="Summary of old episodes")
 
         compactor = MemoryCompactor(episodic, summarizer=mock_summarizer)
 

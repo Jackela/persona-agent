@@ -47,11 +47,23 @@ class MockSearchProvider(SearchProvider):
     def __init__(self):
         self.mock_data: dict[str, list[dict]] = {
             "python": [
-                {"title": "Python Programming Language", "url": "https://python.org", "snippet": "The official home of the Python Programming Language."},
-                {"title": "Python Tutorial - W3Schools", "url": "https://w3schools.com/python", "snippet": "Learn Python with our comprehensive tutorial."},
+                {
+                    "title": "Python Programming Language",
+                    "url": "https://python.org",
+                    "snippet": "The official home of the Python Programming Language.",
+                },
+                {
+                    "title": "Python Tutorial - W3Schools",
+                    "url": "https://w3schools.com/python",
+                    "snippet": "Learn Python with our comprehensive tutorial.",
+                },
             ],
             "default": [
-                {"title": f"Result {i}", "url": f"https://example.com/result{i}", "snippet": f"This is a mock search result {i} for testing purposes."}
+                {
+                    "title": f"Result {i}",
+                    "url": f"https://example.com/result{i}",
+                    "snippet": f"This is a mock search result {i} for testing purposes.",
+                }
                 for i in range(1, 6)
             ],
         }
@@ -175,6 +187,7 @@ class DuckDuckGoSearchProvider(SearchProvider):
 
                 # Extract results from HTML
                 import re
+
                 result_blocks = re.findall(
                     r'<div class="result__body">(.*?)</div>\s*</div>',
                     html,
@@ -185,25 +198,32 @@ class DuckDuckGoSearchProvider(SearchProvider):
                     # Extract title and URL
                     title_match = re.search(r'<a[^>]*class="result__a"[^>]*>(.*?)</a>', block)
                     url_match = re.search(r'href="([^"]*)"', block)
-                    snippet_match = re.search(r'<a[^>]*class="result__snippet"[^>]*>(.*?)</a>', block)
+                    snippet_match = re.search(
+                        r'<a[^>]*class="result__snippet"[^>]*>(.*?)</a>', block
+                    )
 
                     if title_match and url_match:
-                        title = re.sub(r'<[^>]+>', '', title_match.group(1))
+                        title = re.sub(r"<[^>]+>", "", title_match.group(1))
                         url = url_match.group(1)
-                        snippet = re.sub(r'<[^>]+>', '', snippet_match.group(1)) if snippet_match else ""
+                        snippet = (
+                            re.sub(r"<[^>]+>", "", snippet_match.group(1)) if snippet_match else ""
+                        )
 
                         # DuckDuckGo uses redirects, extract actual URL
                         if url.startswith("//duckduckgo.com/l/?"):
-                            uddg_match = re.search(r'uddg=([^&]+)', url)
+                            uddg_match = re.search(r"uddg=([^&]+)", url)
                             if uddg_match:
                                 import urllib.parse
+
                                 url = urllib.parse.unquote(uddg_match.group(1))
 
-                        results.append({
-                            "title": title,
-                            "url": url,
-                            "snippet": snippet,
-                        })
+                        results.append(
+                            {
+                                "title": title,
+                                "url": url,
+                                "snippet": snippet,
+                            }
+                        )
 
                 return {
                     "query": query,
@@ -281,9 +301,7 @@ class WebSearchTool(Tool):
 
         # Validate query
         if not query or len(query) > 500:
-            return ToolResult.error_result(
-                "Query must be between 1 and 500 characters"
-            )
+            return ToolResult.error_result("Query must be between 1 and 500 characters")
 
         # Execute search
         try:

@@ -23,11 +23,13 @@ class SecurityPolicy:
     """
 
     # Allowed tool categories
-    allowed_categories: set[ToolCategory] = field(default_factory=lambda: {
-        ToolCategory.READ_ONLY,
-        ToolCategory.FILE_SYSTEM,
-        ToolCategory.NETWORK,
-    })
+    allowed_categories: set[ToolCategory] = field(
+        default_factory=lambda: {
+            ToolCategory.READ_ONLY,
+            ToolCategory.FILE_SYSTEM,
+            ToolCategory.NETWORK,
+        }
+    )
 
     # Maximum risk level allowed
     max_risk_level: ToolRiskLevel = ToolRiskLevel.HIGH
@@ -36,11 +38,13 @@ class SecurityPolicy:
     required_permissions: dict[ToolRiskLevel, list[str]] = field(default_factory=dict)
 
     # Rate limits (calls per minute)
-    rate_limits: dict[str, int] = field(default_factory=lambda: {
-        "default": 60,
-        "network": 10,
-        "code_execution": 5,
-    })
+    rate_limits: dict[str, int] = field(
+        default_factory=lambda: {
+            "default": 60,
+            "network": 10,
+            "code_execution": 5,
+        }
+    )
 
     # Blocked tools (by name)
     blocked_tools: set[str] = field(default_factory=set)
@@ -88,7 +92,9 @@ class SecurityPolicy:
 
         return True, None
 
-    def check_permissions(self, tool_schema: Any, user_permissions: list[str]) -> tuple[bool, str | None]:
+    def check_permissions(
+        self, tool_schema: Any, user_permissions: list[str]
+    ) -> tuple[bool, str | None]:
         """Check if user has required permissions for a tool.
 
         Args:

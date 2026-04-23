@@ -79,7 +79,8 @@ class EvolutionManager:
         # Check pending limit
         _ = len(self._get_proposals_by_status(ProposalStatus.PENDING))  # For monitoring
         skill_pending = sum(
-            1 for p in self._proposals.values()
+            1
+            for p in self._proposals.values()
             if p.skill_name == proposal.skill_name and p.is_pending
         )
 
@@ -220,9 +221,7 @@ class EvolutionManager:
             Number of proposals expired
         """
         expired = []
-        cutoff = datetime.now(UTC) - timedelta(
-            hours=self.config.proposal_expiry_hours
-        )
+        cutoff = datetime.now(UTC) - timedelta(hours=self.config.proposal_expiry_hours)
 
         for proposal in self._proposals.values():
             if proposal.is_pending and proposal.created_at < cutoff:
@@ -273,7 +272,11 @@ class EvolutionManager:
                     reasoning=data["reasoning"],
                     created_at=datetime.fromisoformat(data["created_at"]),
                     status=ProposalStatus(data["status"]),
-                    reviewed_at=datetime.fromisoformat(data["reviewed_at"]) if data.get("reviewed_at") else None,
+                    reviewed_at=(
+                        datetime.fromisoformat(data["reviewed_at"])
+                        if data.get("reviewed_at")
+                        else None
+                    ),
                     reviewed_by=data.get("reviewed_by"),
                     rejection_reason=data.get("rejection_reason"),
                     metrics_at_creation=data.get("metrics_at_creation", {}),

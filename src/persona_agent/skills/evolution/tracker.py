@@ -162,11 +162,7 @@ class SkillEvolutionTracker:
 
     def get_skills_needing_evolution(self) -> list[str]:
         """Get list of skills that need evolution."""
-        return [
-            name
-            for name, metrics in self._metrics.items()
-            if self.needs_evolution(name)
-        ]
+        return [name for name, metrics in self._metrics.items() if self.needs_evolution(name)]
 
     def can_evolve(self, skill_name: str) -> bool:
         """Check if a skill can be evolved (has enough data)."""
@@ -219,9 +215,7 @@ class SkillEvolutionTracker:
         """Get overall tracking statistics."""
         total_skills = len(self._metrics)
         skills_needing_evolution = len(self.get_skills_needing_evolution())
-        well_performing_skills = sum(
-            1 for m in self._metrics.values() if m.is_performing_well
-        )
+        well_performing_skills = sum(1 for m in self._metrics.values() if m.is_performing_well)
         total_executions = sum(m.total_executions for m in self._metrics.values())
         total_failures = sum(m.failed_executions for m in self._metrics.values())
 

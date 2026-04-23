@@ -74,16 +74,20 @@ class MemoryQueryTool(Tool):
                     session_id=context.session_id,
                     limit=limit,
                 )
-                return ToolResult.success_result({
-                    "memories": [
-                        {
-                            "user": m.user_message,
-                            "assistant": m.assistant_message,
-                            "timestamp": m.timestamp.isoformat() if hasattr(m, 'timestamp') else None,
-                        }
-                        for m in memories
-                    ],
-                })
+                return ToolResult.success_result(
+                    {
+                        "memories": [
+                            {
+                                "user": m.user_message,
+                                "assistant": m.assistant_message,
+                                "timestamp": (
+                                    m.timestamp.isoformat() if hasattr(m, "timestamp") else None
+                                ),
+                            }
+                            for m in memories
+                        ],
+                    }
+                )
 
             elif operation == "search":
                 if not query:
@@ -94,17 +98,21 @@ class MemoryQueryTool(Tool):
                     session_id=context.session_id,
                     limit=limit,
                 )
-                return ToolResult.success_result({
-                    "query": query,
-                    "memories": memories,
-                })
+                return ToolResult.success_result(
+                    {
+                        "query": query,
+                        "memories": memories,
+                    }
+                )
 
             elif operation == "user_info":
                 # Return user-related information
-                return ToolResult.success_result({
-                    "user_id": context.user_id,
-                    "session_id": context.session_id,
-                })
+                return ToolResult.success_result(
+                    {
+                        "user_id": context.user_id,
+                        "session_id": context.session_id,
+                    }
+                )
 
             else:
                 return ToolResult.error_result(f"Unknown operation: {operation}")

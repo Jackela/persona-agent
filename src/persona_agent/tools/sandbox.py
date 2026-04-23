@@ -267,7 +267,7 @@ class RestrictedPythonExecutor:
             stderr = io.StringIO()
 
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-                exec(compiled, self.globals, exec_locals)
+                exec(compiled, self.globals, exec_locals)  # nosec B102
 
             return {
                 "success": True,

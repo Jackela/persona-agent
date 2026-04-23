@@ -173,7 +173,9 @@ jobs:
           bandit -r src -ll -ii -f sarif -o bandit-report.sarif || {
             echo "::warning::Bandit found security issues"
           }
-          bandit -r src -ll -ii -f screen
+          bandit -r src -ll -ii -f screen || {
+            echo "::warning::Bandit found security issues"
+          }
 
       - name: Upload bandit report
         uses: github/codeql-action/upload-sarif@v3

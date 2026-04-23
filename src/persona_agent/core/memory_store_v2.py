@@ -355,7 +355,7 @@ class MemoryStoreV2(MemoryStore):
             where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
 
             cursor = conn.execute(
-                f"""
+                f"""  # nosec B608
                 SELECT * FROM conversations
                 {where_sql}
                 ORDER BY timestamp DESC

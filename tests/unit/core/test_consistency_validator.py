@@ -8,25 +8,24 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from persona_agent.core.consistency_validator import (
+    VALIDATION_PROMPTS,
     ConsistencyScore,
     ConsistencyValidator,
     Message,
     ValidationConfig,
     ValidationError,
     ValidationReport,
-    VALIDATION_PROMPTS,
 )
 from persona_agent.core.schemas import (
     BehavioralMatrix,
+    CognitiveState,
     CoreIdentity,
     CoreValues,
     DynamicContext,
     EmotionalState,
     RelationshipState,
-    CognitiveState,
     ValidationResult,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -1761,7 +1760,7 @@ class TestValidationPrompts:
 
     def test_prompts_are_strings(self):
         """Test that all prompts are strings."""
-        for key, prompt in VALIDATION_PROMPTS.items():
+        for _key, prompt in VALIDATION_PROMPTS.items():
             assert isinstance(prompt, str)
             assert len(prompt) > 0
 

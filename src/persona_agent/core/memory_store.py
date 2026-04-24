@@ -15,11 +15,12 @@ from __future__ import annotations
 import json
 import logging
 import os
-import sqlite3
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+import aiosqlite
 
 from persona_agent.core.db_encryption import FernetColumnEncryptor
 
@@ -68,13 +69,18 @@ class MemoryStore:
         self.db_path = Path(db_path)
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._encryptor = FernetColumnEncryptor(os.environ.get("PERSONA_AGENT_DB_ENCRYPTION_KEY"))
-        self._init_db()
+        self._initialized = False
+        import sqlite3
 
-    def _init_db(self) -> None:
-        """Initialize database schema."""
-        with sqlite3.connect(self.db_path) as conn:
+        sqlite3.connect(self.db_path).close()
+
+    async def _ensure_initialized(self) -> None:
+        """Initialize database schema if not already done."""
+        if self._initialized:
+            return
+        async with aiosqlite.connect(self.db_path) as conn:
             # Conversations table
-            conn.execute("""
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS conversations (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT NOT NULL,
@@ -87,7 +93,7 @@ class MemoryStore:
             """)
 
             # User models table (Honcho-inspired)
-            conn.execute("""
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS user_models (
                     user_id TEXT PRIMARY KEY,
                     traits TEXT,      -- JSON object
@@ -100,7 +106,7 @@ class MemoryStore:
             """)
 
             # Memory summaries (for long-term context)
-            conn.execute("""
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS memory_summaries (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT NOT NULL,
@@ -111,16 +117,17 @@ class MemoryStore:
             """)
 
             # Create indexes
-            conn.execute("""
+            await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_conversations_session
                 ON conversations(session_id)
             """)
-            conn.execute("""
+            await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_conversations_timestamp
                 ON conversations(timestamp)
             """)
 
-            conn.commit()
+            await conn.commit()
+        self._initialized = True
 
     async def store(
         self,
@@ -144,8 +151,9 @@ class MemoryStore:
         """
         timestamp = time.time()
 
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            cursor = await conn.execute(
                 """
                 INSERT INTO conversations
                 (session_id, timestamp, user_message, assistant_message, embedding, metadata)
@@ -160,7 +168,7 @@ class MemoryStore:
                     self._encryptor.encrypt(json.dumps(metadata)) if metadata else None,
                 ),
             )
-            conn.commit()
+            await conn.commit()
 
         logger.debug(f"Stored memory for session {session_id}")
         return cursor.lastrowid
@@ -179,9 +187,10 @@ class MemoryStore:
         Returns:
             List of memory entries
         """
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            conn.row_factory = aiosqlite.Row
+            cursor = await conn.execute(
                 """
                 SELECT * FROM conversations
                 WHERE session_id = ?
@@ -191,7 +200,7 @@ class MemoryStore:
                 (session_id, limit),
             )
 
-            rows = cursor.fetchall()
+            rows = await cursor.fetchall()
 
         memories = []
         for row in rows:  # Keep DESC order - most recent first
@@ -240,11 +249,12 @@ class MemoryStore:
         # In production, this would use embeddings
         keywords = query.lower().split()
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            conn.row_factory = aiosqlite.Row
 
             if session_id:
-                cursor = conn.execute(
+                cursor = await conn.execute(
                     """
                     SELECT * FROM conversations
                     WHERE session_id = ?
@@ -253,9 +263,9 @@ class MemoryStore:
                     (session_id,),
                 )
             else:
-                cursor = conn.execute("SELECT * FROM conversations ORDER BY timestamp DESC")
+                cursor = await conn.execute("SELECT * FROM conversations ORDER BY timestamp DESC")
 
-            rows = cursor.fetchall()
+            rows = await cursor.fetchall()
 
         # Simple keyword scoring
         scored_memories = []
@@ -303,13 +313,14 @@ class MemoryStore:
         Returns:
             UserModel instance
         """
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            conn.row_factory = aiosqlite.Row
+            cursor = await conn.execute(
                 "SELECT * FROM user_models WHERE user_id = ?",
                 (user_id,),
             )
-            row = cursor.fetchone()
+            row = await cursor.fetchone()
 
         if row:
             traits_raw = self._encryptor.decrypt(row["traits"])
@@ -348,8 +359,9 @@ class MemoryStore:
         """
         model.updated_at = time.time()
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            await conn.execute(
                 """
                 INSERT OR REPLACE INTO user_models
                 (user_id, traits, preferences, relationship_stage, interaction_patterns, created_at, updated_at)
@@ -365,7 +377,7 @@ class MemoryStore:
                     model.updated_at,
                 ),
             )
-            conn.commit()
+            await conn.commit()
 
         logger.debug(f"Updated user model for {model.user_id}")
 
@@ -384,8 +396,9 @@ class MemoryStore:
         """
         timestamp = time.time()
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            await conn.execute(
                 """
                 INSERT INTO memory_summaries (session_id, summary, key_points, timestamp)
                 VALUES (?, ?, ?, ?)
@@ -397,7 +410,7 @@ class MemoryStore:
                     timestamp,
                 ),
             )
-            conn.commit()
+            await conn.commit()
 
         logger.debug(f"Stored summary for session {session_id}")
 
@@ -415,9 +428,10 @@ class MemoryStore:
         Returns:
             List of summary dicts
         """
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            conn.row_factory = aiosqlite.Row
+            cursor = await conn.execute(
                 """
                 SELECT * FROM memory_summaries
                 WHERE session_id = ?
@@ -427,7 +441,7 @@ class MemoryStore:
                 (session_id, limit),
             )
 
-            rows = cursor.fetchall()
+            rows = await cursor.fetchall()
 
         results = []
         for row in reversed(rows):

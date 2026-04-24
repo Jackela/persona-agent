@@ -2,7 +2,6 @@
 
 import json
 import sqlite3
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -86,7 +85,7 @@ class TestMemoryStoreV2Init:
     def test_initialization_creates_db(self, tmp_path):
         """Test that initialization creates the database file."""
         db_path = tmp_path / "test_v2.db"
-        store = MemoryStoreV2(
+        MemoryStoreV2(
             db_path=db_path,
             enable_importance_scoring=False,
             enable_vector_index=False,
@@ -148,7 +147,8 @@ class TestMemoryStoreV2Init:
         assert store.vector_index is not None
         assert store.vector_index.persist_dir == vector_dir
 
-    def test_upgrade_schema_adds_columns(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_upgrade_schema_adds_columns(self, tmp_path):
         """Test that schema upgrade adds v2 columns."""
         db_path = tmp_path / "test_v2.db"
 
@@ -156,6 +156,7 @@ class TestMemoryStoreV2Init:
         from persona_agent.core.memory_store import MemoryStore
 
         base_store = MemoryStore(db_path=db_path)
+        await base_store._ensure_initialized()
         base_store.close()
 
         # Now initialize MemoryStoreV2 which should upgrade the schema
@@ -165,6 +166,7 @@ class TestMemoryStoreV2Init:
             enable_vector_index=False,
             enable_compression=False,
         )
+        await store._ensure_initialized()
 
         # Verify columns were added
         with sqlite3.connect(db_path) as conn:
@@ -178,7 +180,8 @@ class TestMemoryStoreV2Init:
         assert "compressed_from" in columns
         assert "compression_summary" in columns
 
-    def test_upgrade_schema_creates_compressed_memories_table(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_upgrade_schema_creates_compressed_memories_table(self, tmp_path):
         """Test that schema upgrade creates compressed_memories table."""
         db_path = tmp_path / "test_v2.db"
 
@@ -188,6 +191,7 @@ class TestMemoryStoreV2Init:
             enable_vector_index=False,
             enable_compression=False,
         )
+        await store._ensure_initialized()
 
         with sqlite3.connect(db_path) as conn:
             cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
@@ -195,7 +199,8 @@ class TestMemoryStoreV2Init:
 
         assert "compressed_memories" in tables
 
-    def test_upgrade_schema_idempotent(self, tmp_path):
+    @pytest.mark.asyncio
+    async def test_upgrade_schema_idempotent(self, tmp_path):
         """Test that schema upgrade is idempotent (can run multiple times)."""
         db_path = tmp_path / "test_v2.db"
 
@@ -206,6 +211,7 @@ class TestMemoryStoreV2Init:
             enable_vector_index=False,
             enable_compression=False,
         )
+        await store1._ensure_initialized()
 
         # Second initialization should not raise
         store2 = MemoryStoreV2(
@@ -214,6 +220,7 @@ class TestMemoryStoreV2Init:
             enable_vector_index=False,
             enable_compression=False,
         )
+        await store2._ensure_initialized()
 
         # Should succeed without errors
         assert store2 is not None
@@ -393,12 +400,12 @@ class TestMemoryStoreV2Store:
         )
 
         # Mock the cursor to return None for lastrowid
-        with patch("sqlite3.connect") as mock_connect:
-            mock_cursor = MagicMock()
+        with patch("aiosqlite.connect") as mock_connect:
+            mock_cursor = AsyncMock()
             mock_cursor.lastrowid = None
-            mock_conn = MagicMock()
+            mock_conn = AsyncMock()
             mock_conn.execute.return_value = mock_cursor
-            mock_connect.return_value.__enter__.return_value = mock_conn
+            mock_connect.return_value.__aenter__.return_value = mock_conn
 
             # Need to also mock the actual db_path since we're bypassing sqlite3
             store.db_path = tmp_path / "mock.db"
@@ -501,7 +508,7 @@ class TestMemoryStoreV2RetrieveRelevant:
             assistant_message="Yes it is!",
         )
 
-        results = await store.retrieve_relevant(
+        await store.retrieve_relevant(
             query="python",
             session_id="test-session",
             use_vector=True,
@@ -775,6 +782,7 @@ class TestMemoryStoreV2RowToEnhancedMemory:
             enable_vector_index=False,
             enable_compression=False,
         )
+        await store._ensure_initialized()
 
         # Insert a row with compression data directly
         with sqlite3.connect(store.db_path) as conn:
@@ -1144,6 +1152,7 @@ class TestMemoryStoreV2GetMemoryStats:
             enable_vector_index=False,
             enable_compression=False,
         )
+        await store._ensure_initialized()
 
         # Store memories with different importance levels (via direct SQL for control)
         with sqlite3.connect(store.db_path) as conn:
@@ -1219,6 +1228,7 @@ class TestMemoryStoreV2RetrieveKeywordBased:
             enable_vector_index=False,
             enable_compression=False,
         )
+        await store._ensure_initialized()
 
         # Insert with specific importance scores
         with sqlite3.connect(store.db_path) as conn:

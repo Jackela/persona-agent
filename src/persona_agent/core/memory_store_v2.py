@@ -11,11 +11,12 @@ from __future__ import annotations
 
 import json
 import logging
-import sqlite3
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+import aiosqlite
 
 from persona_agent.core.importance_scorer import ImportanceScorer
 from persona_agent.core.memory_compression import MemoryCompressor
@@ -83,45 +84,49 @@ class MemoryStoreV2(MemoryStore):
                 persist_dir=vector_persist_dir or Path(db_path).parent / "vectors",
             )
 
-        # Upgrade schema if needed
-        self._upgrade_schema()
+        self._schema_upgraded = False
 
-    def _upgrade_schema(self) -> None:
-        """Upgrade database schema for v2 features."""
-        with sqlite3.connect(self.db_path) as conn:
+    async def _ensure_initialized(self) -> None:
+        """Initialize base schema and upgrade to v2 if needed."""
+        await super()._ensure_initialized()
+        if not self._schema_upgraded:
+            await self._upgrade_schema()
+
+    async def _upgrade_schema(self) -> None:
+        async with aiosqlite.connect(self.db_path) as conn:
             # Check if importance columns exist
-            cursor = conn.execute("PRAGMA table_info(conversations)")
-            columns = {row[1] for row in cursor.fetchall()}
+            cursor = await conn.execute("PRAGMA table_info(conversations)")
+            columns = {row[1] for row in await cursor.fetchall()}
 
             if "importance_score" not in columns:
                 logger.info("Upgrading schema for importance scoring")
-                conn.execute("""
+                await conn.execute("""
                     ALTER TABLE conversations
                     ADD COLUMN importance_score INTEGER DEFAULT 3
                 """)
-                conn.execute("""
+                await conn.execute("""
                     ALTER TABLE conversations
                     ADD COLUMN importance_level TEXT DEFAULT 'MEDIUM'
                 """)
-                conn.execute("""
+                await conn.execute("""
                     ALTER TABLE conversations
                     ADD COLUMN importance_reasoning TEXT
                 """)
-                conn.execute("""
+                await conn.execute("""
                     ALTER TABLE conversations
                     ADD COLUMN is_compressed BOOLEAN DEFAULT 0
                 """)
-                conn.execute("""
+                await conn.execute("""
                     ALTER TABLE conversations
                     ADD COLUMN compressed_from TEXT
                 """)
-                conn.execute("""
+                await conn.execute("""
                     ALTER TABLE conversations
                     ADD COLUMN compression_summary TEXT
                 """)
 
             # Create compressed_memories table
-            conn.execute("""
+            await conn.execute("""
                 CREATE TABLE IF NOT EXISTS compressed_memories (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id TEXT NOT NULL,
@@ -138,7 +143,8 @@ class MemoryStoreV2(MemoryStore):
                 )
             """)
 
-            conn.commit()
+            await conn.commit()
+        self._schema_upgraded = True
 
     async def store(
         self,
@@ -180,8 +186,9 @@ class MemoryStoreV2(MemoryStore):
             except Exception as e:
                 logger.warning(f"Importance scoring failed: {e}")
 
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            cursor = await conn.execute(
                 """
                 INSERT INTO conversations
                 (session_id, timestamp, user_message, assistant_message,
@@ -202,7 +209,7 @@ class MemoryStoreV2(MemoryStore):
                     False,
                 ),
             )
-            conn.commit()
+            await conn.commit()
             memory_id = cursor.lastrowid
 
         # Add to vector index
@@ -284,16 +291,17 @@ class MemoryStoreV2(MemoryStore):
 
         placeholders = ",".join("?" * len(memory_ids))
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            conn.row_factory = aiosqlite.Row
+            cursor = await conn.execute(
                 f"""
                 SELECT * FROM conversations
                 WHERE id IN ({placeholders})
                 """,
                 memory_ids,
             )
-            rows = cursor.fetchall()
+            rows = await cursor.fetchall()
 
         return [self._row_to_enhanced_memory(row) for row in rows]
 
@@ -307,8 +315,9 @@ class MemoryStoreV2(MemoryStore):
         """Fallback keyword-based retrieval."""
         keywords = query.lower().split()
 
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            conn.row_factory = aiosqlite.Row
 
             where_clauses = []
             params = []
@@ -323,7 +332,7 @@ class MemoryStoreV2(MemoryStore):
 
             where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
 
-            cursor = conn.execute(
+            cursor = await conn.execute(
                 f"""
                 SELECT * FROM conversations
                 {where_sql}
@@ -331,7 +340,7 @@ class MemoryStoreV2(MemoryStore):
                 """,
                 params,
             )
-            rows = cursor.fetchall()
+            rows = await cursor.fetchall()
 
         # Score by keyword matches
         scored = []
@@ -348,7 +357,7 @@ class MemoryStoreV2(MemoryStore):
 
         return [self._row_to_enhanced_memory(row) for _, row in top_rows]
 
-    def _row_to_enhanced_memory(self, row: sqlite3.Row) -> EnhancedMemory:
+    def _row_to_enhanced_memory(self, row: aiosqlite.Row) -> EnhancedMemory:
         """Convert database row to EnhancedMemory."""
         row_dict = dict(row)
         user_msg = self._encryptor.decrypt(row["user_message"])
@@ -394,9 +403,10 @@ class MemoryStoreV2(MemoryStore):
             return {"compressed": 0, "reason": "Compression not enabled"}
 
         # Get all memories for session
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.execute(
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            conn.row_factory = aiosqlite.Row
+            cursor = await conn.execute(
                 """
                 SELECT * FROM conversations
                 WHERE session_id = ? AND is_compressed = 0
@@ -404,7 +414,7 @@ class MemoryStoreV2(MemoryStore):
                 """,
                 (session_id,),
             )
-            rows = cursor.fetchall()
+            rows = await cursor.fetchall()
 
         if len(rows) <= target_count:
             return {"compressed": 0, "reason": "Not enough memories to compress"}
@@ -455,8 +465,8 @@ class MemoryStoreV2(MemoryStore):
                 continue
 
             # Store compressed memory
-            with sqlite3.connect(self.db_path) as conn:
-                conn.execute(
+            async with aiosqlite.connect(self.db_path) as conn:
+                await conn.execute(
                     """
                     INSERT INTO compressed_memories
                     (session_id, summary, key_facts, original_ids,
@@ -482,7 +492,7 @@ class MemoryStoreV2(MemoryStore):
 
                 # Mark original memories as compressed
                 for original_id in compressed.original_ids:
-                    conn.execute(
+                    await conn.execute(
                         """
                         UPDATE conversations
                         SET is_compressed = 1,
@@ -497,7 +507,7 @@ class MemoryStoreV2(MemoryStore):
                         ),
                     )
 
-                conn.commit()
+                await conn.commit()
                 compressed_count += len(group)
 
         logger.info(f"Compressed {compressed_count} memories for session {session_id}")
@@ -516,28 +526,29 @@ class MemoryStoreV2(MemoryStore):
         Returns:
             Statistics dict
         """
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
+        await self._ensure_initialized()
+        async with aiosqlite.connect(self.db_path) as conn:
+            conn.row_factory = aiosqlite.Row
 
             # Total memories
             if session_id:
-                cursor = conn.execute(
+                cursor = await conn.execute(
                     "SELECT COUNT(*) FROM conversations WHERE session_id = ?",
                     (session_id,),
                 )
-                total = cursor.fetchone()[0]
+                total = (await cursor.fetchone())[0]
 
-                cursor = conn.execute(
+                cursor = await conn.execute(
                     """
                     SELECT COUNT(*) FROM conversations
                     WHERE session_id = ? AND is_compressed = 1
                     """,
                     (session_id,),
                 )
-                compressed = cursor.fetchone()[0]
+                compressed = (await cursor.fetchone())[0]
 
                 # Importance distribution
-                cursor = conn.execute(
+                cursor = await conn.execute(
                     """
                     SELECT importance_level, COUNT(*) as count
                     FROM conversations
@@ -547,22 +558,22 @@ class MemoryStoreV2(MemoryStore):
                     (session_id,),
                 )
                 importance_dist = {
-                    row["importance_level"]: row["count"] for row in cursor.fetchall()
+                    row["importance_level"]: row["count"] async for row in cursor
                 }
             else:
-                cursor = conn.execute("SELECT COUNT(*) FROM conversations")
-                total = cursor.fetchone()[0]
+                cursor = await conn.execute("SELECT COUNT(*) FROM conversations")
+                total = (await cursor.fetchone())[0]
 
-                cursor = conn.execute("SELECT COUNT(*) FROM conversations WHERE is_compressed = 1")
-                compressed = cursor.fetchone()[0]
+                cursor = await conn.execute("SELECT COUNT(*) FROM conversations WHERE is_compressed = 1")
+                compressed = (await cursor.fetchone())[0]
 
-                cursor = conn.execute("""
+                cursor = await conn.execute("""
                     SELECT importance_level, COUNT(*) as count
                     FROM conversations
                     GROUP BY importance_level
                     """)
                 importance_dist = {
-                    row["importance_level"]: row["count"] for row in cursor.fetchall()
+                    row["importance_level"]: row["count"] async for row in cursor
                 }
 
         # Vector index stats

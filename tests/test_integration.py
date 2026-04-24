@@ -71,13 +71,15 @@ class TestFullConversationFlow:
         """Create mock LLM client."""
         client = MagicMock()
         responses = [
-            "哼哼~ 今天天气不错呢！(ゝ∀･)",
-            "笨蛋，我当然记得你说过的话啦！",
-            "别难过了，有我在呢。",
+            LLMResponse(content=r, model="gpt-4", usage={})
+            for r in [
+                "哼哼~ 今天天气不错呢！(ゝ∀･)",
+                "笨蛋，我当然记得你说过的话啦！",
+                "别难过了，有我在呢。",
+            ]
         ]
-        client.chat = AsyncMock(
-            side_effect=[LLMResponse(content=r, model="gpt-4", usage={}) for r in responses]
-        )
+        from itertools import cycle
+        client.chat = AsyncMock(side_effect=cycle(responses))
         return client
 
     @pytest.mark.asyncio

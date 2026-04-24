@@ -106,6 +106,7 @@ class TestAgentEngine:
     async def test_chat_without_llm_client(self, agent_engine):
         """Test chat raises error when LLM client not configured."""
         agent_engine.llm_client = None
+        agent_engine.pipeline = None
 
         with pytest.raises(RuntimeError, match="LLM client not configured"):
             await agent_engine.chat("Hello")
@@ -223,7 +224,9 @@ class TestAgentEngineIntegration:
             mood_engine.current_state.name = "neutral"
             persona_manager.get_mood_engine.return_value = mood_engine
             persona_manager.build_system_prompt.return_value = "System"
-            persona_manager.apply_linguistic_style.return_value = lambda x: x
+            def mock_apply_style(text, **kwargs):
+                return text
+            persona_manager.apply_linguistic_style.side_effect = mock_apply_style
 
             memory_store = AsyncMock()
             memory_store.retrieve_recent.return_value = []

@@ -17,9 +17,7 @@ class TestCleanupStage:
     async def test_calls_clear_correlation_id(self, chat_context):
         stage = CleanupStage()
 
-        with patch(
-            "persona_agent.core.pipeline.stages.cleanup.clear_correlation_id"
-        ) as mock_clear:
+        with patch("persona_agent.core.pipeline.stages.cleanup.clear_correlation_id") as mock_clear:
             await stage.process(chat_context)
 
             mock_clear.assert_called_once()

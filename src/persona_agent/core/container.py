@@ -63,9 +63,7 @@ class Container:
             reg = self._registry.get(interface)
 
         if reg is None:
-            raise RegistrationNotFoundError(
-                f"No registration found for {interface!r}"
-            )
+            raise RegistrationNotFoundError(f"No registration found for {interface!r}")
 
         if not reg.singleton:
             return self._invoke_factory(reg.factory)
@@ -84,9 +82,7 @@ class Container:
             reg = self._registry.get(interface)
 
         if reg is None:
-            raise RegistrationNotFoundError(
-                f"No registration found for {interface!r}"
-            )
+            raise RegistrationNotFoundError(f"No registration found for {interface!r}")
 
         if not reg.singleton:
             return await self._ainvoke_factory(reg.factory)
@@ -107,9 +103,7 @@ class Container:
     ):
         with self._registry_lock:
             old_reg = self._registry.get(interface)
-            self._registry[interface] = _Registration(
-                lambda: instance, singleton=True
-            )
+            self._registry[interface] = _Registration(lambda: instance, singleton=True)
             self._registry[interface].instance = instance
 
         try:
@@ -140,17 +134,13 @@ class Container:
             kwargs[name] = self.resolve(param.annotation)
         return target_class(**kwargs)
 
-    def _invoke_factory(
-        self, factory: Callable[..., T] | type[T]
-    ) -> T:
+    def _invoke_factory(self, factory: Callable[..., T] | type[T]) -> T:
         if inspect.isclass(factory):
             return self.autowire(factory)
         result = factory()
         return result  # type: ignore[return-value]
 
-    async def _ainvoke_factory(
-        self, factory: Callable[..., T] | type[T]
-    ) -> T:
+    async def _ainvoke_factory(self, factory: Callable[..., T] | type[T]) -> T:
         if inspect.isclass(factory):
             return self.autowire(factory)
         if asyncio.iscoroutinefunction(factory):

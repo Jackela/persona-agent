@@ -331,7 +331,11 @@ class MemoryStore:
                 traits=json.loads(traits_raw) if traits_raw is not None else {},
                 preferences=json.loads(preferences_raw) if preferences_raw is not None else {},
                 relationship_stage=row["relationship_stage"] or "initial",
-                interaction_patterns=json.loads(interaction_patterns_raw) if interaction_patterns_raw is not None else [],
+                interaction_patterns=(
+                    json.loads(interaction_patterns_raw)
+                    if interaction_patterns_raw is not None
+                    else []
+                ),
                 created_at=row["created_at"],
                 updated_at=row["updated_at"],
             )
@@ -441,7 +445,7 @@ class MemoryStore:
                 (session_id, limit),
             )
 
-            rows = await cursor.fetchall()
+            rows = list(await cursor.fetchall())
 
         results = []
         for row in reversed(rows):

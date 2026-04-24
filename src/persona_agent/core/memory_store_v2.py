@@ -381,7 +381,9 @@ class MemoryStoreV2(MemoryStore):
             importance_level=row_dict.get("importance_level", "MEDIUM"),
             importance_reasoning=self._encryptor.decrypt(row["importance_reasoning"]) or "",
             is_compressed=bool(row_dict.get("is_compressed", 0)),
-            compressed_from=json.loads(compressed_from_raw) if compressed_from_raw is not None else None,
+            compressed_from=(
+                json.loads(compressed_from_raw) if compressed_from_raw is not None else None
+            ),
             compression_summary=self._encryptor.decrypt(row["compression_summary"]),
         )
 
@@ -414,7 +416,7 @@ class MemoryStoreV2(MemoryStore):
                 """,
                 (session_id,),
             )
-            rows = await cursor.fetchall()
+            rows = list(await cursor.fetchall())
 
         if len(rows) <= target_count:
             return {"compressed": 0, "reason": "Not enough memories to compress"}
@@ -536,7 +538,8 @@ class MemoryStoreV2(MemoryStore):
                     "SELECT COUNT(*) FROM conversations WHERE session_id = ?",
                     (session_id,),
                 )
-                total = (await cursor.fetchone())[0]
+                row = await cursor.fetchone()
+                total = row[0] if row else 0
 
                 cursor = await conn.execute(
                     """
@@ -545,7 +548,8 @@ class MemoryStoreV2(MemoryStore):
                     """,
                     (session_id,),
                 )
-                compressed = (await cursor.fetchone())[0]
+                row = await cursor.fetchone()
+                compressed = row[0] if row else 0
 
                 # Importance distribution
                 cursor = await conn.execute(
@@ -557,24 +561,24 @@ class MemoryStoreV2(MemoryStore):
                     """,
                     (session_id,),
                 )
-                importance_dist = {
-                    row["importance_level"]: row["count"] async for row in cursor
-                }
+                importance_dist = {row["importance_level"]: row["count"] async for row in cursor}
             else:
                 cursor = await conn.execute("SELECT COUNT(*) FROM conversations")
-                total = (await cursor.fetchone())[0]
+                row = await cursor.fetchone()
+                total = row[0] if row else 0
 
-                cursor = await conn.execute("SELECT COUNT(*) FROM conversations WHERE is_compressed = 1")
-                compressed = (await cursor.fetchone())[0]
+                cursor = await conn.execute(
+                    "SELECT COUNT(*) FROM conversations WHERE is_compressed = 1"
+                )
+                row = await cursor.fetchone()
+                compressed = row[0] if row else 0
 
                 cursor = await conn.execute("""
                     SELECT importance_level, COUNT(*) as count
                     FROM conversations
                     GROUP BY importance_level
                     """)
-                importance_dist = {
-                    row["importance_level"]: row["count"] async for row in cursor
-                }
+                importance_dist = {row["importance_level"]: row["count"] async for row in cursor}
 
         # Vector index stats
         vector_stats = {}

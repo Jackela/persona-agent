@@ -58,6 +58,7 @@ class PersonaAgentError(Exception):
 # Planning
 # ---------------------------------------------------------------------------
 
+
 class PlanningError(PersonaAgentError):
     """Base exception for all planning-related errors."""
 
@@ -181,7 +182,8 @@ class PlanningConfigError(PlanningError):
 # Memory
 # ---------------------------------------------------------------------------
 
-class MemoryError(PersonaAgentError):
+
+class AgentMemoryError(PersonaAgentError):
     """Base exception for memory-related errors."""
 
     def __init__(
@@ -195,7 +197,7 @@ class MemoryError(PersonaAgentError):
         super().__init__(message, code=code, details=details, recoverable=recoverable)
 
 
-class CompactionError(MemoryError):
+class CompactionError(AgentMemoryError):
     """Raised when memory compaction fails."""
 
     def __init__(self, message: str, *, details: dict | None = None) -> None:
@@ -235,21 +237,21 @@ class MemoryGroupError(CompactionError):
         self.memory_count = memory_count
 
 
-class SchedulerError(MemoryError):
+class SchedulerError(AgentMemoryError):
     """Raised when compaction scheduling fails."""
 
     def __init__(self, message: str, *, details: dict | None = None) -> None:
         super().__init__(message, code="SCHEDULER_ERROR", details=details)
 
 
-class MemoryConfigurationError(MemoryError):
+class MemoryConfigurationError(AgentMemoryError):
     """Raised when memory configuration is invalid."""
 
     def __init__(self, message: str, *, details: dict | None = None) -> None:
         super().__init__(message, code="MEMORY_CONFIGURATION_ERROR", details=details)
 
 
-class MemoryStoreError(MemoryError):
+class MemoryStoreError(AgentMemoryError):
     """Error in memory store operations."""
 
     def __init__(
@@ -268,7 +270,7 @@ class MemoryStoreError(MemoryError):
         self.operation = operation
 
 
-class UserNotFoundError(MemoryError):
+class UserNotFoundError(AgentMemoryError):
     """Requested user not found in memory store."""
 
     def __init__(self, user_id: str, *, details: dict | None = None) -> None:
@@ -283,7 +285,7 @@ class UserNotFoundError(MemoryError):
         self.user_id = user_id
 
 
-class ConversationNotFoundError(MemoryError):
+class ConversationNotFoundError(AgentMemoryError):
     """Requested conversation not found."""
 
     def __init__(self, conversation_id: str, *, details: dict | None = None) -> None:
@@ -301,6 +303,7 @@ class ConversationNotFoundError(MemoryError):
 # ---------------------------------------------------------------------------
 # Tools / Skills
 # ---------------------------------------------------------------------------
+
 
 class ToolError(PersonaAgentError):
     """Base exception for tool/skill execution errors."""
@@ -373,6 +376,7 @@ class SkillExecutionError(SkillError):
 # ---------------------------------------------------------------------------
 # Evolution
 # ---------------------------------------------------------------------------
+
 
 class EvolutionError(PersonaAgentError):
     """Base exception for skill evolution errors."""
@@ -458,6 +462,7 @@ class EvolutionValidationError(EvolutionError):
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 class ConfigError(PersonaAgentError):
     """Error in configuration files or settings."""
 
@@ -496,7 +501,7 @@ class ValidationError(PersonaAgentError):
         self.field = field
 
 
-class FileNotFoundError(PersonaAgentError):
+class AgentFileNotFoundError(PersonaAgentError):
     """Required configuration file not found."""
 
     def __init__(self, file_path: str, *, details: dict | None = None) -> None:
@@ -513,6 +518,7 @@ class FileNotFoundError(PersonaAgentError):
 # ---------------------------------------------------------------------------
 # LLM
 # ---------------------------------------------------------------------------
+
 
 class LLMError(PersonaAgentError):
     """Error communicating with LLM API."""
@@ -572,6 +578,7 @@ class AuthenticationError(LLMError):
 # Security
 # ---------------------------------------------------------------------------
 
+
 class SecurityError(PersonaAgentError):
     """Security-related error (authentication, authorization, input sanitisation)."""
 
@@ -589,6 +596,7 @@ class SecurityError(PersonaAgentError):
 # ---------------------------------------------------------------------------
 # Mood
 # ---------------------------------------------------------------------------
+
 
 class MoodEngineError(PersonaAgentError):
     """Error in mood engine operations."""
@@ -643,7 +651,7 @@ __all__ = [
     "InvalidPlanStateError",
     "PlanningConfigError",
     # Memory
-    "MemoryError",
+    "AgentMemoryError",
     "CompactionError",
     "SummarizationError",
     "MemoryGroupError",
@@ -667,7 +675,7 @@ __all__ = [
     # Config
     "ConfigError",
     "ValidationError",
-    "FileNotFoundError",
+    "AgentFileNotFoundError",
     # LLM
     "LLMError",
     "APIRateLimitError",

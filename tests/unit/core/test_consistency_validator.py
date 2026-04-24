@@ -650,7 +650,9 @@ class TestConsistencyValidatorValidate:
         assert report.confidence == 0.0
 
     @pytest.mark.asyncio
-    async def test_validate_exception_in_scoring(self, validator, dynamic_context, conversation_history):
+    async def test_validate_exception_in_scoring(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test validate handles exceptions during scoring gracefully."""
         # First call succeeds, second raises exception
         response = MagicMock()
@@ -690,7 +692,9 @@ class TestConsistencyValidatorValidate:
         assert report.passed is True
 
     @pytest.mark.asyncio
-    async def test_validate_overall_score_below_threshold(self, validator, dynamic_context, conversation_history):
+    async def test_validate_overall_score_below_threshold(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test validate when overall score is below threshold."""
         # Scores that pass individual thresholds but produce overall below threshold
         scores = {
@@ -717,7 +721,9 @@ class TestConsistencyValidatorValidate:
         assert report.passed is False
 
     @pytest.mark.asyncio
-    async def test_validate_no_regeneration_when_disabled(self, validator, dynamic_context, conversation_history):
+    async def test_validate_no_regeneration_when_disabled(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test validate does not generate revision when regeneration is disabled."""
         validator.config.enable_regeneration = False
 
@@ -737,7 +743,9 @@ class TestConsistencyValidatorValidate:
         assert report.suggested_revision is None
 
     @pytest.mark.asyncio
-    async def test_validate_with_violations_but_passed(self, validator, dynamic_context, conversation_history):
+    async def test_validate_with_violations_but_passed(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test validate when there are violations but overall passes."""
         # Scores at exact thresholds so is_consistent returns True,
         # but overall is below threshold to trigger critique generation
@@ -803,11 +811,19 @@ class TestConsistencyValidatorValidateWithRegeneration:
 
         validator.llm_client.chat.side_effect = [
             # Attempt 1: 5 dimension scores + critique + revision
-            fail_response, fail_response, fail_response, fail_response, fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
             critique_response,
             revision_response,
             # Attempt 2: 5 dimension scores (pass)
-            pass_response, pass_response, pass_response, pass_response, pass_response,
+            pass_response,
+            pass_response,
+            pass_response,
+            pass_response,
+            pass_response,
         ]
 
         final_response, reports = await validator.validate_with_regeneration(
@@ -832,15 +848,27 @@ class TestConsistencyValidatorValidateWithRegeneration:
         # All attempts fail
         validator.llm_client.chat.side_effect = [
             # Attempt 1
-            fail_response, fail_response, fail_response, fail_response, fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
             critique_response,
             revision_response,
             # Attempt 2
-            fail_response, fail_response, fail_response, fail_response, fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
             critique_response,
             revision_response,
             # Attempt 3
-            fail_response, fail_response, fail_response, fail_response, fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
             critique_response,
             revision_response,
         ]
@@ -865,7 +893,11 @@ class TestConsistencyValidatorValidateWithRegeneration:
         # First attempt fails but no revision generated (enable_regeneration=False)
         validator.config.enable_regeneration = False
         validator.llm_client.chat.side_effect = [
-            fail_response, fail_response, fail_response, fail_response, fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
             critique_response,
         ]
 
@@ -904,7 +936,9 @@ class TestScoreDimensions:
     """Test suite for _score_dimensions and _evaluate_dimension."""
 
     @pytest.mark.asyncio
-    async def test_score_dimensions_all_success(self, validator, dynamic_context, conversation_history):
+    async def test_score_dimensions_all_success(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test _score_dimensions with all successful evaluations."""
         response = MagicMock()
         response.content = json.dumps({"score": 0.85})
@@ -922,7 +956,9 @@ class TestScoreDimensions:
             assert 0.0 <= scores[dim] <= 1.0
 
     @pytest.mark.asyncio
-    async def test_score_dimensions_some_fail(self, validator, dynamic_context, conversation_history):
+    async def test_score_dimensions_some_fail(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test _score_dimensions when some evaluations fail."""
         success_response = MagicMock(content=json.dumps({"score": 0.8}))
         error_response = Exception("LLM error")
@@ -968,7 +1004,7 @@ class TestScoreDimensions:
     async def test_evaluate_dimension_markdown_code_block(self, validator):
         """Test _evaluate_dimension with markdown code block response."""
         response = MagicMock()
-        response.content = "```json\n{\"score\": 0.85}\n```"
+        response.content = '```json\n{"score": 0.85}\n```'
         validator.llm_client.chat.return_value = response
 
         score = await validator._evaluate_dimension(
@@ -982,7 +1018,7 @@ class TestScoreDimensions:
     async def test_evaluate_dimension_markdown_no_lang(self, validator):
         """Test _evaluate_dimension with markdown block without language tag."""
         response = MagicMock()
-        response.content = "```\n{\"score\": 0.9}\n```"
+        response.content = '```\n{"score": 0.9}\n```'
         validator.llm_client.chat.return_value = response
 
         score = await validator._evaluate_dimension(
@@ -1064,7 +1100,7 @@ class TestScoreDimensions:
     async def test_evaluate_dimension_whitespace_content(self, validator):
         """Test _evaluate_dimension with whitespace in content."""
         response = MagicMock()
-        response.content = "   {\"score\": 0.75}   "
+        response.content = '   {"score": 0.75}   '
         validator.llm_client.chat.return_value = response
 
         score = await validator._evaluate_dimension(
@@ -1197,7 +1233,9 @@ class TestGenerateRevision:
     """Test suite for _generate_revision method."""
 
     @pytest.mark.asyncio
-    async def test_generate_revision_success(self, validator, dynamic_context, conversation_history):
+    async def test_generate_revision_success(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test _generate_revision with successful LLM call."""
         response = MagicMock()
         response.content = "Revised response text."
@@ -1226,7 +1264,9 @@ class TestGenerateRevision:
         assert call_args[1]["max_tokens"] == 1000
 
     @pytest.mark.asyncio
-    async def test_generate_revision_llm_error(self, validator, dynamic_context, conversation_history):
+    async def test_generate_revision_llm_error(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test _generate_revision returns original on LLM error."""
         validator.llm_client.chat.side_effect = Exception("LLM error")
 
@@ -1249,7 +1289,9 @@ class TestGenerateRevision:
         assert revision == "Original response"
 
     @pytest.mark.asyncio
-    async def test_generate_revision_no_failed_dimensions(self, validator, dynamic_context, conversation_history):
+    async def test_generate_revision_no_failed_dimensions(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test _generate_revision with no failed dimensions."""
         response = MagicMock()
         response.content = "Revision with no failures."
@@ -1370,7 +1412,9 @@ class TestBuildValidationPrompts:
         assert dynamic_context.emotional.primary_emotion in prompt
         assert dynamic_context.user_intent in prompt
 
-    def test_personality_consistency_prompt_content(self, validator, dynamic_context, conversation_history):
+    def test_personality_consistency_prompt_content(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test personality_consistency prompt includes expected content."""
         prompts = validator._build_validation_prompts(
             response="Test response",
@@ -1384,7 +1428,9 @@ class TestBuildValidationPrompts:
         assert dynamic_context.emotional.primary_emotion in prompt
         assert dynamic_context.social.current_stage in prompt
 
-    def test_historical_coherence_prompt_content(self, validator, dynamic_context, conversation_history):
+    def test_historical_coherence_prompt_content(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test historical_coherence prompt includes expected content."""
         prompts = validator._build_validation_prompts(
             response="Test response",
@@ -1398,7 +1444,9 @@ class TestBuildValidationPrompts:
         assert "Hello" in prompt  # From conversation history
         assert "Hi there!" in prompt
 
-    def test_emotional_appropriateness_prompt_content(self, validator, dynamic_context, conversation_history):
+    def test_emotional_appropriateness_prompt_content(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test emotional_appropriateness prompt includes expected content."""
         prompts = validator._build_validation_prompts(
             response="Test response",
@@ -1412,7 +1460,9 @@ class TestBuildValidationPrompts:
         assert dynamic_context.user_intent in prompt
         assert "Test response" in prompt
 
-    def test_contextual_awareness_prompt_content(self, validator, dynamic_context, conversation_history):
+    def test_contextual_awareness_prompt_content(
+        self, validator, dynamic_context, conversation_history
+    ):
         """Test contextual_awareness prompt includes expected content."""
         prompts = validator._build_validation_prompts(
             response="Test response",
@@ -1459,10 +1509,7 @@ class TestBuildValidationPrompts:
 
     def test_build_prompts_long_history_truncated(self, validator, dynamic_context):
         """Test that only last 5 messages are included in history."""
-        long_history = [
-            Message(role="user", content=f"Message {i}")
-            for i in range(10)
-        ]
+        long_history = [Message(role="user", content=f"Message {i}") for i in range(10)]
 
         prompts = validator._build_validation_prompts(
             response="Test response",
@@ -1802,7 +1849,9 @@ class TestConsistencyValidatorIntegration:
     """Integration-style tests for ConsistencyValidator."""
 
     @pytest.mark.asyncio
-    async def test_full_validation_pipeline_pass(self, core_identity, dynamic_context, conversation_history):
+    async def test_full_validation_pipeline_pass(
+        self, core_identity, dynamic_context, conversation_history
+    ):
         """Test complete validation pipeline with passing response."""
         client = AsyncMock()
         response = MagicMock()
@@ -1825,7 +1874,9 @@ class TestConsistencyValidatorIntegration:
         assert len(report.dimension_scores) == 5
 
     @pytest.mark.asyncio
-    async def test_full_validation_pipeline_fail_then_regenerate(self, core_identity, dynamic_context, conversation_history):
+    async def test_full_validation_pipeline_fail_then_regenerate(
+        self, core_identity, dynamic_context, conversation_history
+    ):
         """Test complete pipeline with failing response and regeneration."""
         client = AsyncMock()
         fail_response = MagicMock(content=json.dumps({"score": 0.3}))
@@ -1835,11 +1886,19 @@ class TestConsistencyValidatorIntegration:
 
         client.chat.side_effect = [
             # Attempt 1: all fail
-            fail_response, fail_response, fail_response, fail_response, fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
+            fail_response,
             critique_response,
             revision_response,
             # Attempt 2: all pass
-            pass_response, pass_response, pass_response, pass_response, pass_response,
+            pass_response,
+            pass_response,
+            pass_response,
+            pass_response,
+            pass_response,
         ]
 
         validator = ConsistencyValidator(
@@ -1860,7 +1919,9 @@ class TestConsistencyValidatorIntegration:
         assert reports[1].passed is True
 
     @pytest.mark.asyncio
-    async def test_validation_updates_history(self, core_identity, dynamic_context, conversation_history):
+    async def test_validation_updates_history(
+        self, core_identity, dynamic_context, conversation_history
+    ):
         """Test that validation can work with history."""
         history = [
             ValidationResult(overall_valid=True, overall_score=0.85),
@@ -1917,7 +1978,7 @@ class TestConsistencyValidatorIntegration:
             ('   {"score": 0.9}   ', 0.9),
             ('{"score": 1.5}', 1.0),  # Clamped
             ('{"score": -0.5}', 0.0),  # Clamped
-            ('invalid json', 0.0),
+            ("invalid json", 0.0),
             ('{"reasoning": "no score"}', 0.0),
         ]
 

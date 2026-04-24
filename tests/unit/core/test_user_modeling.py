@@ -564,56 +564,62 @@ class TestAdaptiveUserModeling:
     def mock_conclusions_response(self):
         """Mock response for conclusion extraction."""
         response = MagicMock()
-        response.content = json.dumps({
-            "conclusions": [
-                {
-                    "type": "deductive",
-                    "premises": ["User says they are vegan"],
-                    "conclusion": "User follows plant-based diet",
-                    "confidence": 0.8,
-                },
-                {
-                    "type": "inductive",
-                    "premises": ["User went hiking twice"],
-                    "conclusion": "User enjoys hiking regularly",
-                    "confidence": 0.7,
-                },
-            ]
-        })
+        response.content = json.dumps(
+            {
+                "conclusions": [
+                    {
+                        "type": "deductive",
+                        "premises": ["User says they are vegan"],
+                        "conclusion": "User follows plant-based diet",
+                        "confidence": 0.8,
+                    },
+                    {
+                        "type": "inductive",
+                        "premises": ["User went hiking twice"],
+                        "conclusion": "User enjoys hiking regularly",
+                        "confidence": 0.7,
+                    },
+                ]
+            }
+        )
         return response
 
     @pytest.fixture
     def mock_preferences_response(self):
         """Mock response for preference detection."""
         response = MagicMock()
-        response.content = json.dumps({
-            "preferences": [
-                {
-                    "category": "communication",
-                    "value": "direct",
-                    "confidence": 0.8,
-                    "evidence": "User asks straight questions",
-                },
-                {
-                    "category": "topic",
-                    "value": "AI",
-                    "confidence": 0.9,
-                    "evidence": "User discusses AI frequently",
-                },
-            ]
-        })
+        response.content = json.dumps(
+            {
+                "preferences": [
+                    {
+                        "category": "communication",
+                        "value": "direct",
+                        "confidence": 0.8,
+                        "evidence": "User asks straight questions",
+                    },
+                    {
+                        "category": "topic",
+                        "value": "AI",
+                        "confidence": 0.9,
+                        "evidence": "User discusses AI frequently",
+                    },
+                ]
+            }
+        )
         return response
 
     @pytest.fixture
     def mock_triggers_response(self):
         """Mock response for emotional trigger detection."""
         response = MagicMock()
-        response.content = json.dumps({
-            "triggers": [
-                {"topic": "work deadlines", "intensity": 0.8, "sentiment": "negative"},
-                {"topic": "family", "intensity": 0.9, "sentiment": "positive"},
-            ]
-        })
+        response.content = json.dumps(
+            {
+                "triggers": [
+                    {"topic": "work deadlines", "intensity": 0.8, "sentiment": "negative"},
+                    {"topic": "family", "intensity": 0.9, "sentiment": "positive"},
+                ]
+            }
+        )
         return response
 
     @pytest.fixture
@@ -652,9 +658,7 @@ class TestAdaptiveUserModeling:
         assert model2.trust_level == 0.9
 
     @pytest.mark.asyncio
-    async def test_extract_conclusions(
-        self, modeling, mock_llm_client, mock_conclusions_response
-    ):
+    async def test_extract_conclusions(self, modeling, mock_llm_client, mock_conclusions_response):
         """Test conclusion extraction from user message."""
         mock_llm_client.chat.return_value = mock_conclusions_response
 
@@ -670,16 +674,16 @@ class TestAdaptiveUserModeling:
         assert conclusions[0].confidence >= 0.5
 
     @pytest.mark.asyncio
-    async def test_extract_conclusions_with_markdown(
-        self, modeling, mock_llm_client
-    ):
+    async def test_extract_conclusions_with_markdown(self, modeling, mock_llm_client):
         """Test parsing markdown code blocks in response."""
         response = MagicMock()
-        response.content = "```json\n" + json.dumps({
-            "conclusions": [
-                {"type": "abductive", "conclusion": "Test", "confidence": 0.6}
-            ]
-        }) + "\n```"
+        response.content = (
+            "```json\n"
+            + json.dumps(
+                {"conclusions": [{"type": "abductive", "conclusion": "Test", "confidence": 0.6}]}
+            )
+            + "\n```"
+        )
         mock_llm_client.chat.return_value = response
 
         model = UserModel(user_id="user1")
@@ -689,17 +693,17 @@ class TestAdaptiveUserModeling:
         assert conclusions[0].conclusion == "Test"
 
     @pytest.mark.asyncio
-    async def test_extract_conclusions_low_confidence_filtered(
-        self, modeling, mock_llm_client
-    ):
+    async def test_extract_conclusions_low_confidence_filtered(self, modeling, mock_llm_client):
         """Test low-confidence conclusions are filtered out."""
         response = MagicMock()
-        response.content = json.dumps({
-            "conclusions": [
-                {"type": "deductive", "conclusion": "High conf", "confidence": 0.8},
-                {"type": "inductive", "conclusion": "Low conf", "confidence": 0.3},
-            ]
-        })
+        response.content = json.dumps(
+            {
+                "conclusions": [
+                    {"type": "deductive", "conclusion": "High conf", "confidence": 0.8},
+                    {"type": "inductive", "conclusion": "Low conf", "confidence": 0.3},
+                ]
+            }
+        )
         mock_llm_client.chat.return_value = response
 
         model = UserModel(user_id="user1")
@@ -709,9 +713,7 @@ class TestAdaptiveUserModeling:
         assert conclusions[0].conclusion == "High conf"
 
     @pytest.mark.asyncio
-    async def test_extract_conclusions_malformed_json(
-        self, modeling, mock_llm_client
-    ):
+    async def test_extract_conclusions_malformed_json(self, modeling, mock_llm_client):
         """Test handling malformed JSON response."""
         response = MagicMock()
         response.content = "not valid json"
@@ -723,9 +725,7 @@ class TestAdaptiveUserModeling:
         assert conclusions == []
 
     @pytest.mark.asyncio
-    async def test_extract_conclusions_empty_list(
-        self, modeling, mock_llm_client
-    ):
+    async def test_extract_conclusions_empty_list(self, modeling, mock_llm_client):
         """Test empty conclusions list."""
         response = MagicMock()
         response.content = json.dumps({"conclusions": []})
@@ -737,9 +737,7 @@ class TestAdaptiveUserModeling:
         assert conclusions == []
 
     @pytest.mark.asyncio
-    async def test_detect_preferences(
-        self, modeling, mock_llm_client, mock_preferences_response
-    ):
+    async def test_detect_preferences(self, modeling, mock_llm_client, mock_preferences_response):
         """Test preference detection."""
         mock_llm_client.chat.return_value = mock_preferences_response
 
@@ -750,17 +748,17 @@ class TestAdaptiveUserModeling:
         assert prefs[0].category == "communication"
 
     @pytest.mark.asyncio
-    async def test_detect_preferences_low_confidence_filtered(
-        self, modeling, mock_llm_client
-    ):
+    async def test_detect_preferences_low_confidence_filtered(self, modeling, mock_llm_client):
         """Test low-confidence preferences filtered."""
         response = MagicMock()
-        response.content = json.dumps({
-            "preferences": [
-                {"category": "topic", "value": "AI", "confidence": 0.9},
-                {"category": "style", "value": "casual", "confidence": 0.4},
-            ]
-        })
+        response.content = json.dumps(
+            {
+                "preferences": [
+                    {"category": "topic", "value": "AI", "confidence": 0.9},
+                    {"category": "style", "value": "casual", "confidence": 0.4},
+                ]
+            }
+        )
         mock_llm_client.chat.return_value = response
 
         model = UserModel(user_id="user1")
@@ -770,9 +768,7 @@ class TestAdaptiveUserModeling:
         assert prefs[0].value == "AI"
 
     @pytest.mark.asyncio
-    async def test_detect_preferences_malformed_json(
-        self, modeling, mock_llm_client
-    ):
+    async def test_detect_preferences_malformed_json(self, modeling, mock_llm_client):
         """Test handling malformed JSON."""
         response = MagicMock()
         response.content = "invalid json"
@@ -804,12 +800,14 @@ class TestAdaptiveUserModeling:
     ):
         """Test low-intensity triggers filtered."""
         response = MagicMock()
-        response.content = json.dumps({
-            "triggers": [
-                {"topic": "Strong", "intensity": 0.8},
-                {"topic": "Weak", "intensity": 0.3},
-            ]
-        })
+        response.content = json.dumps(
+            {
+                "triggers": [
+                    {"topic": "Strong", "intensity": 0.8},
+                    {"topic": "Weak", "intensity": 0.3},
+                ]
+            }
+        )
         mock_llm_client.chat.return_value = response
 
         triggers = await modeling.detect_emotional_triggers("Test")
@@ -818,9 +816,7 @@ class TestAdaptiveUserModeling:
         assert "weak" not in triggers
 
     @pytest.mark.asyncio
-    async def test_detect_emotional_triggers_malformed_json(
-        self, modeling, mock_llm_client
-    ):
+    async def test_detect_emotional_triggers_malformed_json(self, modeling, mock_llm_client):
         """Test handling malformed JSON."""
         response = MagicMock()
         response.content = "bad json"
@@ -835,7 +831,9 @@ class TestAdaptiveUserModeling:
         model = UserModel(user_id="user1")
         initial_trust = model.trust_level
 
-        result = modeling.update_relationship_metrics(model, interaction_sentiment=0.8, interaction_depth=0.5)
+        result = modeling.update_relationship_metrics(
+            model, interaction_sentiment=0.8, interaction_depth=0.5
+        )
 
         assert result.trust_level > initial_trust
         assert result.familiarity > 0.0
@@ -845,7 +843,9 @@ class TestAdaptiveUserModeling:
         model = UserModel(user_id="user1")
         initial_trust = model.trust_level
 
-        result = modeling.update_relationship_metrics(model, interaction_sentiment=-0.8, interaction_depth=0.5)
+        result = modeling.update_relationship_metrics(
+            model, interaction_sentiment=-0.8, interaction_depth=0.5
+        )
 
         assert result.trust_level < initial_trust
 
@@ -854,7 +854,9 @@ class TestAdaptiveUserModeling:
         model = UserModel(user_id="user1")
         initial_trust = model.trust_level
 
-        result = modeling.update_relationship_metrics(model, interaction_sentiment=0.1, interaction_depth=0.5)
+        result = modeling.update_relationship_metrics(
+            model, interaction_sentiment=0.1, interaction_depth=0.5
+        )
 
         assert result.trust_level == initial_trust
 
@@ -863,7 +865,9 @@ class TestAdaptiveUserModeling:
         model = UserModel(user_id="user1")
         initial_trust = model.trust_level
 
-        result = modeling.update_relationship_metrics(model, interaction_sentiment=0.5, interaction_depth=0.8)
+        result = modeling.update_relationship_metrics(
+            model, interaction_sentiment=0.5, interaction_depth=0.8
+        )
 
         assert result.trust_level > initial_trust
 
@@ -872,7 +876,9 @@ class TestAdaptiveUserModeling:
         model = UserModel(user_id="user1")
         model.trust_level = 0.05
 
-        result = modeling.update_relationship_metrics(model, interaction_sentiment=-1.0, interaction_depth=0.5)
+        result = modeling.update_relationship_metrics(
+            model, interaction_sentiment=-1.0, interaction_depth=0.5
+        )
 
         assert result.trust_level == 0.0
 
@@ -881,7 +887,9 @@ class TestAdaptiveUserModeling:
         model = UserModel(user_id="user1")
         model.trust_level = 0.98
 
-        result = modeling.update_relationship_metrics(model, interaction_sentiment=1.0, interaction_depth=0.8)
+        result = modeling.update_relationship_metrics(
+            model, interaction_sentiment=1.0, interaction_depth=0.8
+        )
 
         assert result.trust_level == 1.0
 
@@ -1066,6 +1074,7 @@ class TestAdaptiveUserModeling:
         mock_sentiment_response,
     ):
         """Test full interaction update flow."""
+
         async def mock_chat(*args, **kwargs):
             messages = kwargs.get("messages", args[0] if args else [])
             prompt = messages[1]["content"] if len(messages) > 1 else ""
@@ -1097,6 +1106,7 @@ class TestAdaptiveUserModeling:
     @pytest.mark.asyncio
     async def test_update_from_interaction_empty_message(self, modeling, mock_llm_client):
         """Test handling empty user message."""
+
         async def mock_chat(*args, **kwargs):
             response = MagicMock()
             response.content = json.dumps({"conclusions": [], "preferences": [], "triggers": []})
@@ -1114,10 +1124,9 @@ class TestAdaptiveUserModeling:
         assert model.interaction_count == 1
 
     @pytest.mark.asyncio
-    async def test_update_from_interaction_with_emotional_state(
-        self, modeling, mock_llm_client
-    ):
+    async def test_update_from_interaction_with_emotional_state(self, modeling, mock_llm_client):
         """Test update with emotional state parameter."""
+
         async def mock_chat(*args, **kwargs):
             response = MagicMock()
             response.content = json.dumps({"triggers": []})
@@ -1145,11 +1154,13 @@ class TestEdgeCases:
         modeling = AdaptiveUserModeling(llm_client=client)
 
         response = MagicMock()
-        response.content = json.dumps({
-            "conclusions": [],
-            "preferences": [],
-            "triggers": [],
-        })
+        response.content = json.dumps(
+            {
+                "conclusions": [],
+                "preferences": [],
+                "triggers": [],
+            }
+        )
         client.chat.return_value = response
 
         model = await modeling.update_from_interaction(
@@ -1186,7 +1197,9 @@ class TestEdgeCases:
         modeling = AdaptiveUserModeling(llm_client=client)
 
         model = UserModel(user_id="user1", trust_level=0.0)
-        result = modeling.update_relationship_metrics(model, interaction_sentiment=-1.0, interaction_depth=0.5)
+        result = modeling.update_relationship_metrics(
+            model, interaction_sentiment=-1.0, interaction_depth=0.5
+        )
 
         assert result.trust_level == 0.0
 
@@ -1197,7 +1210,9 @@ class TestEdgeCases:
         modeling = AdaptiveUserModeling(llm_client=client)
 
         model = UserModel(user_id="user1", trust_level=1.0)
-        result = modeling.update_relationship_metrics(model, interaction_sentiment=1.0, interaction_depth=0.8)
+        result = modeling.update_relationship_metrics(
+            model, interaction_sentiment=1.0, interaction_depth=0.8
+        )
 
         assert result.trust_level == 1.0
 
@@ -1289,7 +1304,10 @@ class TestEdgeCases:
         """Test interaction depth capped at 1.0."""
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
-        message = "I feel happy and sad and angry and worried and excited and love and hate and enjoy and upset and grateful and frustrated and anxious and hopeful. " * 10
+        message = (
+            "I feel happy and sad and angry and worried and excited and love and hate and enjoy and upset and grateful and frustrated and anxious and hopeful. "
+            * 10
+        )
         message += "I me my mine myself " * 20
 
         depth = modeling._calculate_interaction_depth(message)
@@ -1361,11 +1379,13 @@ class TestEdgeCases:
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
         response = MagicMock()
-        response.content = json.dumps({
-            "conclusions": [],
-            "preferences": [],
-            "triggers": [],
-        })
+        response.content = json.dumps(
+            {
+                "conclusions": [],
+                "preferences": [],
+                "triggers": [],
+            }
+        )
         client.chat.return_value = response
 
         model = await modeling.update_from_interaction(
@@ -1466,12 +1486,14 @@ class TestEdgeCases:
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
         response = MagicMock()
-        response.content = json.dumps({
-            "triggers": [
-                {"topic": "valid", "intensity": 0.8},
-                {"topic": "", "intensity": 0.9},
-            ]
-        })
+        response.content = json.dumps(
+            {
+                "triggers": [
+                    {"topic": "valid", "intensity": 0.8},
+                    {"topic": "", "intensity": 0.9},
+                ]
+            }
+        )
         client.chat.return_value = response
 
         triggers = await modeling.detect_emotional_triggers("Test")
@@ -1485,9 +1507,13 @@ class TestEdgeCases:
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
         response = MagicMock()
-        response.content = "```\n" + json.dumps({
-            "conclusions": [{"type": "deductive", "conclusion": "Test", "confidence": 0.7}]
-        }) + "\n```"
+        response.content = (
+            "```\n"
+            + json.dumps(
+                {"conclusions": [{"type": "deductive", "conclusion": "Test", "confidence": 0.7}]}
+            )
+            + "\n```"
+        )
         client.chat.return_value = response
 
         conclusions = await modeling.extract_conclusions("Test", "", UserModel(user_id="u1"))
@@ -1499,9 +1525,11 @@ class TestEdgeCases:
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
         response = MagicMock()
-        response.content = "```\n" + json.dumps({
-            "preferences": [{"category": "topic", "value": "AI", "confidence": 0.8}]
-        }) + "\n```"
+        response.content = (
+            "```\n"
+            + json.dumps({"preferences": [{"category": "topic", "value": "AI", "confidence": 0.8}]})
+            + "\n```"
+        )
         client.chat.return_value = response
 
         prefs = await modeling.detect_preferences("Test", UserModel(user_id="u1"))
@@ -1513,9 +1541,9 @@ class TestEdgeCases:
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
         response = MagicMock()
-        response.content = "```\n" + json.dumps({
-            "triggers": [{"topic": "work", "intensity": 0.8}]
-        }) + "\n```"
+        response.content = (
+            "```\n" + json.dumps({"triggers": [{"topic": "work", "intensity": 0.8}]}) + "\n```"
+        )
         client.chat.return_value = response
 
         triggers = await modeling.detect_emotional_triggers("Test")
@@ -1524,11 +1552,13 @@ class TestEdgeCases:
     def test_user_model_from_dict_complex(self):
         """Test round-trip serialization with complex data."""
         model = UserModel(user_id="user1")
-        model.add_conclusion(Conclusion(
-            conclusion_type="deductive",
-            conclusion="User likes Python",
-            confidence=0.8,
-        ))
+        model.add_conclusion(
+            Conclusion(
+                conclusion_type="deductive",
+                conclusion="User likes Python",
+                confidence=0.8,
+            )
+        )
         model.add_preference(UserPreference(category="topic", value="AI", confidence=0.9))
         model.peer_card.add_fact("[work] Engineer")
         model.update_emotional_trigger("deadlines", 0.8)
@@ -1550,11 +1580,13 @@ class TestEdgeCases:
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
         response = MagicMock()
-        response.content = json.dumps({
-            "conclusions": [],
-            "preferences": [],
-            "triggers": [],
-        })
+        response.content = json.dumps(
+            {
+                "conclusions": [],
+                "preferences": [],
+                "triggers": [],
+            }
+        )
         client.chat.return_value = response
 
         await modeling.update_from_interaction(
@@ -1574,11 +1606,13 @@ class TestEdgeCases:
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
         response = MagicMock()
-        response.content = json.dumps({
-            "conclusions": [],
-            "preferences": [],
-            "triggers": [],
-        })
+        response.content = json.dumps(
+            {
+                "conclusions": [],
+                "preferences": [],
+                "triggers": [],
+            }
+        )
         client.chat.return_value = response
 
         await modeling.update_from_interaction(
@@ -1617,7 +1651,9 @@ class TestEdgeCases:
         initial = model.familiarity
 
         for _ in range(10):
-            model = modeling.update_relationship_metrics(model, interaction_sentiment=0.5, interaction_depth=0.5)
+            model = modeling.update_relationship_metrics(
+                model, interaction_sentiment=0.5, interaction_depth=0.5
+            )
 
         assert model.familiarity > initial
         assert model.familiarity <= 1.0
@@ -1629,6 +1665,7 @@ class TestEdgeCases:
 
         old_ts = card.access_timestamps[0]
         import time
+
         time.sleep(0.01)
 
         card.access_fact("Fact A")
@@ -1668,11 +1705,13 @@ class TestEdgeCases:
         client.chat.return_value = response
 
         model = await modeling.get_or_create_user("user1")
-        model.add_conclusion(Conclusion(
-            conclusion_type="deductive",
-            conclusion="User knows Python",
-            confidence=0.8,
-        ))
+        model.add_conclusion(
+            Conclusion(
+                conclusion_type="deductive",
+                conclusion="User knows Python",
+                confidence=0.8,
+            )
+        )
 
         answer = await modeling.query_user_preferences("user1", "What does user know?")
         assert isinstance(answer, str)
@@ -1702,14 +1741,18 @@ class TestEdgeCases:
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
         response = MagicMock()
-        response.content = json.dumps({
-            "conclusions": [{
-                "type": "deductive",
-                "premises": ["User says X", "User says Y"],
-                "conclusion": "User believes Z",
-                "confidence": 0.8,
-            }]
-        })
+        response.content = json.dumps(
+            {
+                "conclusions": [
+                    {
+                        "type": "deductive",
+                        "premises": ["User says X", "User says Y"],
+                        "conclusion": "User believes Z",
+                        "confidence": 0.8,
+                    }
+                ]
+            }
+        )
         client.chat.return_value = response
 
         conclusions = await modeling.extract_conclusions("Test", "", UserModel(user_id="u1"))
@@ -1723,14 +1766,18 @@ class TestEdgeCases:
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
         response = MagicMock()
-        response.content = json.dumps({
-            "preferences": [{
-                "category": "topic",
-                "value": "AI",
-                "confidence": 0.8,
-                "evidence": "User mentions AI often",
-            }]
-        })
+        response.content = json.dumps(
+            {
+                "preferences": [
+                    {
+                        "category": "topic",
+                        "value": "AI",
+                        "confidence": 0.8,
+                        "evidence": "User mentions AI often",
+                    }
+                ]
+            }
+        )
         client.chat.return_value = response
 
         prefs = await modeling.detect_preferences("Test", UserModel(user_id="u1"))
@@ -1810,11 +1857,13 @@ class TestEdgeCases:
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
         response = MagicMock()
-        response.content = json.dumps({
-            "conclusions": [],
-            "preferences": [],
-            "triggers": [],
-        })
+        response.content = json.dumps(
+            {
+                "conclusions": [],
+                "preferences": [],
+                "triggers": [],
+            }
+        )
         client.chat.return_value = response
 
         model = await modeling.update_from_interaction(

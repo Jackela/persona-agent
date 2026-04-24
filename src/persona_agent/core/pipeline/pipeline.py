@@ -48,9 +48,7 @@ class ChatPipeline:
                 context = result.context
 
                 if not result.should_continue:
-                    logger.debug(
-                        f"Pipeline short-circuited by {stage.__class__.__name__}"
-                    )
+                    logger.debug(f"Pipeline short-circuited by {stage.__class__.__name__}")
                     break
 
         except Exception:

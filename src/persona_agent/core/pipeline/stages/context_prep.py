@@ -33,9 +33,7 @@ class ContextPreparationStage:
         )
         for memory in memories:
             context.messages.append({"role": "user", "content": memory.user_message})
-            context.messages.append(
-                {"role": "assistant", "content": memory.assistant_message}
-            )
+            context.messages.append({"role": "assistant", "content": memory.assistant_message})
 
         context.messages.append({"role": "user", "content": context.user_input})
 

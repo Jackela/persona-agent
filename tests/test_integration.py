@@ -79,6 +79,7 @@ class TestFullConversationFlow:
             ]
         ]
         from itertools import cycle
+
         client.chat = AsyncMock(side_effect=cycle(responses))
         return client
 

@@ -55,9 +55,7 @@ class TestResponseGenerationStage:
         )
 
     @pytest.mark.asyncio
-    async def test_generates_non_streaming_response(
-        self, stage, mock_llm_client, chat_context
-    ):
+    async def test_generates_non_streaming_response(self, stage, mock_llm_client, chat_context):
         """Test that non-streaming response is generated."""
         result = await stage.process(chat_context)
 

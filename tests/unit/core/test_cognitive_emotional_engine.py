@@ -290,14 +290,16 @@ class TestCognitivePathway:
         """Mock LLM client."""
         client = AsyncMock()
         response = MagicMock()
-        response.content = json.dumps({
-            "understanding": "User is asking about weather",
-            "user_intent": "informational_query",
-            "topics": ["weather"],
-            "entities": ["London"],
-            "reasoning": "User wants to know the weather",
-            "relevance_score": 0.8,
-        })
+        response.content = json.dumps(
+            {
+                "understanding": "User is asking about weather",
+                "user_intent": "informational_query",
+                "topics": ["weather"],
+                "entities": ["London"],
+                "reasoning": "User wants to know the weather",
+                "relevance_score": 0.8,
+            }
+        )
         client.chat.return_value = response
         return client
 
@@ -330,14 +332,20 @@ class TestCognitivePathway:
     async def test_process_with_markdown_json(self, mock_llm_client, working_memory):
         """Test processing with markdown-wrapped JSON response."""
         response = MagicMock()
-        response.content = "```json\n" + json.dumps({
-            "understanding": "Test understanding",
-            "user_intent": "social_chat",
-            "topics": ["greeting"],
-            "entities": [],
-            "reasoning": "Simple greeting",
-            "relevance_score": 0.5,
-        }) + "\n```"
+        response.content = (
+            "```json\n"
+            + json.dumps(
+                {
+                    "understanding": "Test understanding",
+                    "user_intent": "social_chat",
+                    "topics": ["greeting"],
+                    "entities": [],
+                    "reasoning": "Simple greeting",
+                    "relevance_score": 0.5,
+                }
+            )
+            + "\n```"
+        )
         mock_llm_client.chat.return_value = response
 
         pathway = CognitivePathway(llm_client=mock_llm_client)
@@ -350,14 +358,20 @@ class TestCognitivePathway:
     async def test_process_with_generic_markdown(self, mock_llm_client, working_memory):
         """Test processing with generic markdown code block."""
         response = MagicMock()
-        response.content = "```\n" + json.dumps({
-            "understanding": "Generic markdown",
-            "user_intent": "social_chat",
-            "topics": [],
-            "entities": [],
-            "reasoning": "",
-            "relevance_score": 0.3,
-        }) + "\n```"
+        response.content = (
+            "```\n"
+            + json.dumps(
+                {
+                    "understanding": "Generic markdown",
+                    "user_intent": "social_chat",
+                    "topics": [],
+                    "entities": [],
+                    "reasoning": "",
+                    "relevance_score": 0.3,
+                }
+            )
+            + "\n```"
+        )
         mock_llm_client.chat.return_value = response
 
         pathway = CognitivePathway(llm_client=mock_llm_client)
@@ -412,6 +426,7 @@ class TestCognitivePathway:
 
     def test_build_context_with_message_objects(self, cognitive_pathway):
         """Test context building with Message-like objects."""
+
         # Create a mock working memory with Message-like objects
         class MockMessage:
             def __init__(self, role, content):
@@ -501,15 +516,29 @@ class TestEmotionalPathway:
         """Mock LLM client."""
         client = AsyncMock()
         response = MagicMock()
-        response.content = json.dumps({
-            "detected_emotions": [
-                {"label": "joy", "intensity": 0.8, "valence": 0.8, "arousal": 0.6, "dominance": 0.6},
-                {"label": "surprise", "intensity": 0.4, "valence": 0.2, "arousal": 0.8, "dominance": 0.5},
-            ],
-            "emotional_reaction": "feeling happy for the user",
-            "appropriate_response_tone": "warm",
-            "affect_influence": 0.6,
-        })
+        response.content = json.dumps(
+            {
+                "detected_emotions": [
+                    {
+                        "label": "joy",
+                        "intensity": 0.8,
+                        "valence": 0.8,
+                        "arousal": 0.6,
+                        "dominance": 0.6,
+                    },
+                    {
+                        "label": "surprise",
+                        "intensity": 0.4,
+                        "valence": 0.2,
+                        "arousal": 0.8,
+                        "dominance": 0.5,
+                    },
+                ],
+                "emotional_reaction": "feeling happy for the user",
+                "appropriate_response_tone": "warm",
+                "affect_influence": 0.6,
+            }
+        )
         client.chat.return_value = response
         return client
 
@@ -558,14 +587,16 @@ class TestEmotionalPathway:
     ):
         """Test processing when emotions lack VAD values."""
         response = MagicMock()
-        response.content = json.dumps({
-            "detected_emotions": [
-                {"label": "happy", "intensity": 0.7},
-            ],
-            "emotional_reaction": "feeling good",
-            "appropriate_response_tone": "warm",
-            "affect_influence": 0.5,
-        })
+        response.content = json.dumps(
+            {
+                "detected_emotions": [
+                    {"label": "happy", "intensity": 0.7},
+                ],
+                "emotional_reaction": "feeling good",
+                "appropriate_response_tone": "warm",
+                "affect_influence": 0.5,
+            }
+        )
         mock_llm_client.chat.return_value = response
 
         pathway = EmotionalPathway(llm_client=mock_llm_client)
@@ -591,15 +622,19 @@ class TestEmotionalPathway:
         assert result.detected_emotions[0]["label"] == "joy"
 
     @pytest.mark.asyncio
-    async def test_process_empty_emotions(self, mock_llm_client, cognitive_output, current_emotional_state):
+    async def test_process_empty_emotions(
+        self, mock_llm_client, cognitive_output, current_emotional_state
+    ):
         """Test processing with empty emotions from LLM."""
         response = MagicMock()
-        response.content = json.dumps({
-            "detected_emotions": [],
-            "emotional_reaction": "",
-            "appropriate_response_tone": "neutral",
-            "affect_influence": 0.2,
-        })
+        response.content = json.dumps(
+            {
+                "detected_emotions": [],
+                "emotional_reaction": "",
+                "appropriate_response_tone": "neutral",
+                "affect_influence": 0.2,
+            }
+        )
         mock_llm_client.chat.return_value = response
 
         pathway = EmotionalPathway(llm_client=mock_llm_client)
@@ -608,13 +643,17 @@ class TestEmotionalPathway:
         assert result.detected_emotions == []
         assert result.affect_influence == 0.2
 
-    def test_update_emotional_state_with_emotions(
-        self, emotional_pathway, current_emotional_state
-    ):
+    def test_update_emotional_state_with_emotions(self, emotional_pathway, current_emotional_state):
         """Test emotional state update with detected emotions."""
         emotional_output = EmotionalOutput(
             detected_emotions=[
-                {"label": "joy", "intensity": 0.8, "valence": 0.8, "arousal": 0.6, "dominance": 0.6},
+                {
+                    "label": "joy",
+                    "intensity": 0.8,
+                    "valence": 0.8,
+                    "arousal": 0.6,
+                    "dominance": 0.6,
+                },
             ],
             emotional_reaction="feeling happy",
             appropriate_response_tone="warm",
@@ -632,9 +671,7 @@ class TestEmotionalPathway:
         assert new_state.intensity > current_emotional_state.intensity
         assert new_state.primary_emotion == "joy"
 
-    def test_update_emotional_state_no_emotions(
-        self, emotional_pathway, current_emotional_state
-    ):
+    def test_update_emotional_state_no_emotions(self, emotional_pathway, current_emotional_state):
         """Test emotional state update with no emotions."""
         emotional_output = EmotionalOutput(
             detected_emotions=[],
@@ -659,7 +696,13 @@ class TestEmotionalPathway:
         """Test emotional state update with zero time delta."""
         emotional_output = EmotionalOutput(
             detected_emotions=[
-                {"label": "angry", "intensity": 0.9, "valence": -0.7, "arousal": 0.8, "dominance": 0.8},
+                {
+                    "label": "angry",
+                    "intensity": 0.9,
+                    "valence": -0.7,
+                    "arousal": 0.8,
+                    "dominance": 0.8,
+                },
             ],
             emotional_reaction="feeling angry",
             appropriate_response_tone="assertive",
@@ -703,9 +746,27 @@ class TestEmotionalPathway:
         """Test secondary emotions are preserved."""
         emotional_output = EmotionalOutput(
             detected_emotions=[
-                {"label": "joy", "intensity": 0.8, "valence": 0.8, "arousal": 0.6, "dominance": 0.6},
-                {"label": "surprise", "intensity": 0.5, "valence": 0.2, "arousal": 0.8, "dominance": 0.5},
-                {"label": "pride", "intensity": 0.3, "valence": 0.7, "arousal": 0.5, "dominance": 0.8},
+                {
+                    "label": "joy",
+                    "intensity": 0.8,
+                    "valence": 0.8,
+                    "arousal": 0.6,
+                    "dominance": 0.6,
+                },
+                {
+                    "label": "surprise",
+                    "intensity": 0.5,
+                    "valence": 0.2,
+                    "arousal": 0.8,
+                    "dominance": 0.5,
+                },
+                {
+                    "label": "pride",
+                    "intensity": 0.3,
+                    "valence": 0.7,
+                    "arousal": 0.5,
+                    "dominance": 0.8,
+                },
             ],
             emotional_reaction="feeling joyful and surprised",
             appropriate_response_tone="warm",
@@ -727,7 +788,13 @@ class TestEmotionalPathway:
         """Test that very low intensity reverts to neutral."""
         emotional_output = EmotionalOutput(
             detected_emotions=[
-                {"label": "joy", "intensity": 0.01, "valence": 0.8, "arousal": 0.6, "dominance": 0.6},
+                {
+                    "label": "joy",
+                    "intensity": 0.01,
+                    "valence": 0.8,
+                    "arousal": 0.6,
+                    "dominance": 0.6,
+                },
             ],
             emotional_reaction="",
             appropriate_response_tone="neutral",
@@ -822,9 +889,7 @@ class TestEmotionalPathway:
         assert result.detected_emotions[0]["label"] == "neutral"
         assert result.appropriate_response_tone == "neutral"
 
-    def test_fallback_emotional_processing_mixed(
-        self, emotional_pathway, current_emotional_state
-    ):
+    def test_fallback_emotional_processing_mixed(self, emotional_pathway, current_emotional_state):
         """Test fallback with mixed emotional words."""
         result = emotional_pathway._fallback_emotional_processing(
             "I love this but feel anxious",
@@ -865,7 +930,13 @@ class TestFusionLayer:
         """Create sample emotional output."""
         return EmotionalOutput(
             detected_emotions=[
-                {"label": "sad", "intensity": 0.7, "valence": -0.7, "arousal": 0.3, "dominance": 0.3},
+                {
+                    "label": "sad",
+                    "intensity": 0.7,
+                    "valence": -0.7,
+                    "arousal": 0.3,
+                    "dominance": 0.3,
+                },
             ],
             emotional_reaction="feeling concerned",
             appropriate_response_tone="somber",
@@ -909,13 +980,17 @@ class TestFusionLayer:
         # Should be influenced by sad emotion (negative valence)
         assert fused.valence < current_state.valence
 
-    def test_fuse_emotional_state_high_influence(
-        self, fusion_layer, current_state
-    ):
+    def test_fuse_emotional_state_high_influence(self, fusion_layer, current_state):
         """Test fusion with high affect influence."""
         high_influence_emotional = EmotionalOutput(
             detected_emotions=[
-                {"label": "angry", "intensity": 0.9, "valence": -0.7, "arousal": 0.8, "dominance": 0.8},
+                {
+                    "label": "angry",
+                    "intensity": 0.9,
+                    "valence": -0.7,
+                    "arousal": 0.8,
+                    "dominance": 0.8,
+                },
             ],
             emotional_reaction="feeling angry",
             appropriate_response_tone="assertive",
@@ -928,7 +1003,9 @@ class TestFusionLayer:
         assert fused.valence < 0.0
         assert fused.arousal > 0.5
 
-    def test_generate_response_guidance_full(self, fusion_layer, cognitive_output, emotional_output):
+    def test_generate_response_guidance_full(
+        self, fusion_layer, cognitive_output, emotional_output
+    ):
         """Test response guidance generation with all components."""
         fused_state = fusion_layer._fuse_emotional_state(
             create_neutral_emotional_state(), emotional_output
@@ -1050,25 +1127,35 @@ class TestCognitiveEmotionalEngine:
 
         # Cognitive response
         cognitive_response = MagicMock()
-        cognitive_response.content = json.dumps({
-            "understanding": "User is greeting",
-            "user_intent": "social_chat",
-            "topics": ["greeting"],
-            "entities": [],
-            "reasoning": "Simple greeting",
-            "relevance_score": 0.5,
-        })
+        cognitive_response.content = json.dumps(
+            {
+                "understanding": "User is greeting",
+                "user_intent": "social_chat",
+                "topics": ["greeting"],
+                "entities": [],
+                "reasoning": "Simple greeting",
+                "relevance_score": 0.5,
+            }
+        )
 
         # Emotional response
         emotional_response = MagicMock()
-        emotional_response.content = json.dumps({
-            "detected_emotions": [
-                {"label": "happy", "intensity": 0.6, "valence": 0.8, "arousal": 0.6, "dominance": 0.6},
-            ],
-            "emotional_reaction": "feeling friendly",
-            "appropriate_response_tone": "warm",
-            "affect_influence": 0.4,
-        })
+        emotional_response.content = json.dumps(
+            {
+                "detected_emotions": [
+                    {
+                        "label": "happy",
+                        "intensity": 0.6,
+                        "valence": 0.8,
+                        "arousal": 0.6,
+                        "dominance": 0.6,
+                    },
+                ],
+                "emotional_reaction": "feeling friendly",
+                "appropriate_response_tone": "warm",
+                "affect_influence": 0.4,
+            }
+        )
 
         # Return different responses for different calls
         async def mock_chat(*args, **kwargs):
@@ -1142,6 +1229,7 @@ class TestCognitiveEmotionalEngine:
 
         # Small delay to ensure time changes
         import asyncio
+
         await asyncio.sleep(0.01)
 
         await engine.process("Hello", working_memory)
@@ -1283,10 +1371,34 @@ class TestEdgeCases:
 
         emotional = EmotionalOutput(
             detected_emotions=[
-                {"label": "happy", "intensity": 0.8, "valence": 0.8, "arousal": 0.6, "dominance": 0.6},
-                {"label": "surprise", "intensity": 0.5, "valence": 0.2, "arousal": 0.8, "dominance": 0.5},
-                {"label": "pride", "intensity": 0.4, "valence": 0.7, "arousal": 0.5, "dominance": 0.8},
-                {"label": "relief", "intensity": 0.3, "valence": 0.6, "arousal": 0.3, "dominance": 0.5},
+                {
+                    "label": "happy",
+                    "intensity": 0.8,
+                    "valence": 0.8,
+                    "arousal": 0.6,
+                    "dominance": 0.6,
+                },
+                {
+                    "label": "surprise",
+                    "intensity": 0.5,
+                    "valence": 0.2,
+                    "arousal": 0.8,
+                    "dominance": 0.5,
+                },
+                {
+                    "label": "pride",
+                    "intensity": 0.4,
+                    "valence": 0.7,
+                    "arousal": 0.5,
+                    "dominance": 0.8,
+                },
+                {
+                    "label": "relief",
+                    "intensity": 0.3,
+                    "valence": 0.6,
+                    "arousal": 0.3,
+                    "dominance": 0.5,
+                },
             ],
             emotional_reaction="",
             appropriate_response_tone="warm",
@@ -1398,14 +1510,16 @@ class TestEdgeCases:
         """Test engine process with effectively zero time delta."""
         client = AsyncMock()
         response = MagicMock()
-        response.content = json.dumps({
-            "understanding": "Test",
-            "user_intent": "social_chat",
-            "topics": [],
-            "entities": [],
-            "reasoning": "",
-            "relevance_score": 0.5,
-        })
+        response.content = json.dumps(
+            {
+                "understanding": "Test",
+                "user_intent": "social_chat",
+                "topics": [],
+                "entities": [],
+                "reasoning": "",
+                "relevance_score": 0.5,
+            }
+        )
         client.chat.return_value = response
 
         engine = CognitiveEmotionalEngine(llm_client=client)
@@ -1441,7 +1555,13 @@ class TestEdgeCases:
 
         emotional_output = EmotionalOutput(
             detected_emotions=[
-                {"label": "furious", "intensity": 1.0, "valence": -0.9, "arousal": 0.95, "dominance": 0.9},
+                {
+                    "label": "furious",
+                    "intensity": 1.0,
+                    "valence": -0.9,
+                    "arousal": 0.95,
+                    "dominance": 0.9,
+                },
             ],
             emotional_reaction="feeling furious",
             appropriate_response_tone="assertive",
@@ -1492,7 +1612,13 @@ class TestEdgeCases:
 
         emotional_output = EmotionalOutput(
             detected_emotions=[
-                {"label": "custom", "intensity": 1.0, "valence": 2.0, "arousal": -1.0, "dominance": 2.0},
+                {
+                    "label": "custom",
+                    "intensity": 1.0,
+                    "valence": 2.0,
+                    "arousal": -1.0,
+                    "dominance": 2.0,
+                },
             ],
             emotional_reaction="",
             appropriate_response_tone="neutral",
@@ -1519,7 +1645,13 @@ class TestEdgeCases:
 
         emotional = EmotionalOutput(
             detected_emotions=[
-                {"label": "custom", "intensity": 1.0, "valence": 2.0, "arousal": -1.0, "dominance": 2.0},
+                {
+                    "label": "custom",
+                    "intensity": 1.0,
+                    "valence": 2.0,
+                    "arousal": -1.0,
+                    "dominance": 2.0,
+                },
             ],
             emotional_reaction="",
             appropriate_response_tone="neutral",
@@ -1541,14 +1673,16 @@ class TestEdgeCases:
         response.content = (
             "Here is my analysis:\n\n"
             "```json\n"
-            + json.dumps({
-                "understanding": "Test",
-                "user_intent": "social_chat",
-                "topics": [],
-                "entities": [],
-                "reasoning": "",
-                "relevance_score": 0.5,
-            })
+            + json.dumps(
+                {
+                    "understanding": "Test",
+                    "user_intent": "social_chat",
+                    "topics": [],
+                    "entities": [],
+                    "reasoning": "",
+                    "relevance_score": 0.5,
+                }
+            )
             + "\n```\n\nHope this helps!"
         )
         client.chat.return_value = response
@@ -1567,12 +1701,14 @@ class TestEdgeCases:
         response.content = (
             "Analysis:\n"
             "```json\n"
-            + json.dumps({
-                "detected_emotions": [{"label": "happy", "intensity": 0.7}],
-                "emotional_reaction": "feeling good",
-                "appropriate_response_tone": "warm",
-                "affect_influence": 0.5,
-            })
+            + json.dumps(
+                {
+                    "detected_emotions": [{"label": "happy", "intensity": 0.7}],
+                    "emotional_reaction": "feeling good",
+                    "appropriate_response_tone": "warm",
+                    "affect_influence": 0.5,
+                }
+            )
             + "\n```"
         )
         client.chat.return_value = response

@@ -49,9 +49,7 @@ class PlanningExecutionStage:
             "session_id": context.session_id,
         }
 
-        plan = await self.planning_engine.create_plan(
-            context.user_input, plan_context
-        )
+        plan = await self.planning_engine.create_plan(context.user_input, plan_context)
         self._active_plans[plan.id] = plan
 
         try:

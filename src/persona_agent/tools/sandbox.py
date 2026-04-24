@@ -84,6 +84,7 @@ class SandboxConfig:
                 "breakpoint",
             ]
 
+
 class SecurityError(PersonaAgentError):
     """Raised when security policy is violated."""
 

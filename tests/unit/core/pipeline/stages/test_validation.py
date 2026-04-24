@@ -37,9 +37,7 @@ class TestValidationStage:
     async def test_calls_set_correlation_id(self, mock_llm_client, chat_context):
         stage = ValidationStage(llm_client=mock_llm_client)
 
-        with patch(
-            "persona_agent.core.pipeline.stages.validation.set_correlation_id"
-        ) as mock_set:
+        with patch("persona_agent.core.pipeline.stages.validation.set_correlation_id") as mock_set:
             await stage.process(chat_context)
 
             mock_set.assert_called_once_with(chat_context.correlation_id)

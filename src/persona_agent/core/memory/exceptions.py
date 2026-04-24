@@ -7,16 +7,16 @@ All classes are kept for backward compatibility.
 from __future__ import annotations
 
 from persona_agent.exceptions import (
+    AgentMemoryError,
     CompactionError,
     MemoryConfigurationError,
-    MemoryError,
     MemoryGroupError,
     SchedulerError,
     SummarizationError,
 )
 
 __all__ = [
-    "MemoryError",
+    "AgentMemoryError",
     "CompactionError",
     "SummarizationError",
     "MemoryGroupError",

@@ -85,8 +85,6 @@ limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="Persona Agent Web UI", version="0.1.0", lifespan=lifespan)
 app.add_middleware(StructuredAccessLogMiddleware)
 app.state.limiter = limiter
-from starlette.requests import Request as StarletteRequest
-from starlette.responses import Response as StarletteResponse
 
 app.add_exception_handler(
     RateLimitExceeded,

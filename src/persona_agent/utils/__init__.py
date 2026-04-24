@@ -1,11 +1,11 @@
 """Utility functions for persona-agent."""
 
 from persona_agent.utils.exceptions import (
+    AgentFileNotFoundError,
     APIRateLimitError,
     AuthenticationError,
     ConfigurationError,
     ConversationNotFoundError,
-    FileNotFoundError,
     InvalidMoodError,
     LLMError,
     MemoryStoreError,
@@ -24,7 +24,7 @@ __all__ = [
     "PersonaAgentError",
     "ConfigurationError",
     "ValidationError",
-    "FileNotFoundError",
+    "AgentFileNotFoundError",
     "MemoryStoreError",
     "UserNotFoundError",
     "ConversationNotFoundError",

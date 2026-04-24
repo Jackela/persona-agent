@@ -7,10 +7,12 @@ All classes are kept for backward compatibility.
 from __future__ import annotations
 
 from persona_agent.exceptions import (
+    AgentFileNotFoundError,
+    AgentMemoryError,
     APIRateLimitError,
     AuthenticationError,
+    ConfigError,
     ConversationNotFoundError,
-    FileNotFoundError,
     InvalidMoodError,
     LLMError,
     MemoryStoreError,
@@ -23,16 +25,20 @@ from persona_agent.exceptions import (
     UserNotFoundError,
     ValidationError,
 )
-from persona_agent.exceptions import (
-    ConfigError as ConfigurationError,
-)
+
+ConfigurationError = ConfigError
+FileNotFoundError = AgentFileNotFoundError
+MemoryError = AgentMemoryError
 
 __all__ = [
     "PersonaAgentError",
     "ConfigurationError",
     "ValidationError",
+    "AgentFileNotFoundError",
     "FileNotFoundError",
+    "AgentMemoryError",
     "MemoryStoreError",
+    "MemoryError",
     "UserNotFoundError",
     "ConversationNotFoundError",
     "LLMError",

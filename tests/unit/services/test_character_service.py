@@ -69,7 +69,7 @@ class TestCharacterService:
     def test_get_character_not_found(self, service, mock_loader):
         """Test getting a non-existent character raises error."""
         # Arrange
-        from persona_agent.utils.exceptions import FileNotFoundError as PAFileNotFoundError
+        from persona_agent.utils.exceptions import AgentFileNotFoundError as PAFileNotFoundError
 
         mock_loader.load_character.side_effect = PAFileNotFoundError("default")
         service._loader = mock_loader

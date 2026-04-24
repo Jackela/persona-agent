@@ -614,9 +614,7 @@ class TestMemoryStoreV2RetrieveRelevant:
 
         # Mock vector index
         store.vector_index = AsyncMock()
-        store.vector_index.search = AsyncMock(
-            return_value=[{"id": "1", "similarity": 0.9}]
-        )
+        store.vector_index.search = AsyncMock(return_value=[{"id": "1", "similarity": 0.9}])
 
         results = await store.retrieve_relevant(
             query="python",
@@ -853,9 +851,19 @@ class TestMemoryStoreV2RowToEnhancedMemory:
             "compression_summary": None,
         }.get(key)
         mock_row.keys = lambda: [
-            "id", "session_id", "timestamp", "user_message", "assistant_message",
-            "embedding", "metadata", "importance_score", "importance_level",
-            "importance_reasoning", "is_compressed", "compressed_from", "compression_summary",
+            "id",
+            "session_id",
+            "timestamp",
+            "user_message",
+            "assistant_message",
+            "embedding",
+            "metadata",
+            "importance_score",
+            "importance_level",
+            "importance_reasoning",
+            "is_compressed",
+            "compressed_from",
+            "compression_summary",
         ]
 
         # Need to make it behave like sqlite3.Row for dict() conversion

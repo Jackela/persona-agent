@@ -12,6 +12,7 @@ class ChatContext:
     Carries all state needed throughout the chat flow.
     Stages mutate this context in-place and return it via StageResult.
     """
+
     # Input parameters (set once at pipeline start)
     user_input: str
     session_id: str
@@ -34,5 +35,6 @@ class StageResult:
     should_continue=False signals pipeline short-circuit.
     This allows skill matching and planning to exit early.
     """
+
     context: ChatContext
     should_continue: bool = True

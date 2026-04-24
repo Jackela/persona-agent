@@ -67,9 +67,7 @@ class TestChatPipeline:
         stage3 = self._make_stage("Stage3")
 
         stage1.process.return_value = StageResult(context=base_context)
-        stage2.process.return_value = StageResult(
-            context=base_context, should_continue=False
-        )
+        stage2.process.return_value = StageResult(context=base_context, should_continue=False)
 
         pipeline = ChatPipeline(stages=[stage1, stage2, stage3])
         result = await pipeline.execute(base_context)
@@ -136,9 +134,7 @@ class TestChatPipeline:
         stage1 = self._make_stage("Stage1", should_continue=False)
         cleanup = self._make_stage("CleanupStage")
 
-        stage1.process.return_value = StageResult(
-            context=base_context, should_continue=False
-        )
+        stage1.process.return_value = StageResult(context=base_context, should_continue=False)
         cleanup.process.return_value = StageResult(context=base_context)
 
         pipeline = ChatPipeline(stages=[stage1], cleanup_stage=cleanup)
@@ -186,9 +182,7 @@ class TestChatPipeline:
         import logging
 
         stage1 = self._make_stage("TestStage", should_continue=False)
-        stage1.process.return_value = StageResult(
-            context=base_context, should_continue=False
-        )
+        stage1.process.return_value = StageResult(context=base_context, should_continue=False)
 
         pipeline = ChatPipeline(stages=[stage1])
 

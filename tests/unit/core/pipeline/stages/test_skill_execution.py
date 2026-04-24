@@ -76,9 +76,7 @@ class TestSkillExecutionStage:
         mock_skill_registry.execute_matching.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_continues_when_no_skill_matches(
-        self, stage, mock_skill_registry, chat_context
-    ):
+    async def test_continues_when_no_skill_matches(self, stage, mock_skill_registry, chat_context):
         """Test that stage continues when no skill matches."""
         # Arrange
         mock_skill_registry.execute_matching.return_value = None
@@ -93,9 +91,7 @@ class TestSkillExecutionStage:
         assert chat_context.is_complete is False
 
     @pytest.mark.asyncio
-    async def test_continues_when_skill_fails(
-        self, stage, mock_skill_registry, chat_context
-    ):
+    async def test_continues_when_skill_fails(self, stage, mock_skill_registry, chat_context):
         """Test that stage continues when skill returns failure."""
         # Arrange
         skill_result = SkillResult(success=False, response="")

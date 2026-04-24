@@ -414,20 +414,21 @@ class MemoryStoreV2(MemoryStore):
         importance_scores = []
 
         for row in rows:
+            row_dict = dict(row)
             memories.append(
                 {
                     "id": row["id"],
                     "user_message": self._encryptor.decrypt(row["user_message"]) or "",
                     "assistant_message": self._encryptor.decrypt(row["assistant_message"]) or "",
                     "timestamp": row["timestamp"],
-                    "importance_score": row.get("importance_score", 3),
+                    "importance_score": row_dict.get("importance_score", 3),
                 }
             )
 
             if self.importance_scorer:
                 from persona_agent.core.importance_scorer import ImportanceScore
 
-                score_val = row.get("importance_score", 3)
+                score_val = row_dict.get("importance_score", 3)
                 importance_scores.append(
                     ImportanceScore(
                         score=score_val,

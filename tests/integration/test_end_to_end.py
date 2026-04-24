@@ -10,8 +10,10 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from persona_agent.config.loader import ConfigLoader
 from persona_agent.core.agent_engine import AgentEngine
 from persona_agent.core.memory_store import MemoryStore
+from persona_agent.core.persona_manager import PersonaManager
 from persona_agent.core.planning import ExecutionConfig, PlanningConfig
 from persona_agent.skills.base import SkillContext, SkillResult
 from persona_agent.skills.evolution import (
@@ -108,8 +110,13 @@ class TestEndToEndChatWorkflow:
         self, temp_config_dir, test_characters, mock_llm_for_e2e
     ):
         """Test simple chat that doesn't trigger planning."""
+        config_loader = ConfigLoader(config_dir=temp_config_dir)
+        persona_manager = PersonaManager(config_loader=config_loader)
+        persona_manager.load_character("default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
         )
 
         # Simple greeting

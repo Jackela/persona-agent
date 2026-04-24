@@ -437,10 +437,18 @@ def tool(
         FunctionTool.description = description
 
         # Return a wrapper that has _tool_class attribute
+        from typing import Protocol
+
+        class ToolWrapper(Protocol):
+            _tool_class: type[Tool]
+            __name__: str
+            __doc__: str | None
+            __call__: Callable
+
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
 
-        wrapper._tool_class = FunctionTool
+        wrapper._tool_class = FunctionTool  # type: ignore[attr-defined]
         wrapper.__name__ = func.__name__
         wrapper.__doc__ = func.__doc__
         return wrapper

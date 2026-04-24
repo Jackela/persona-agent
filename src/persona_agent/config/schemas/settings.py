@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 from persona_agent.config.schemas.evolution import SkillEvolutionConfig
 from persona_agent.config.schemas.memory import MemorySystemConfig
@@ -136,78 +136,6 @@ class ApplicationSettings(BaseModel):
         default_factory=SkillEvolutionConfig, alias="skill_evolution"
     )
 
-    @field_validator("llm", mode="before")
-    @classmethod
-    def validate_llm(cls, v: dict | LLMConfig | None) -> LLMConfig:
-        """Handle both dict and object inputs."""
-        if v is None:
-            return LLMConfig()
-        if isinstance(v, LLMConfig):
-            return v
-        return LLMConfig(**v)
-
-    @field_validator("database", mode="before")
-    @classmethod
-    def validate_database(cls, v: dict | DatabaseConfig | None) -> DatabaseConfig:
-        """Handle both dict and object inputs."""
-        if v is None:
-            return DatabaseConfig()
-        if isinstance(v, DatabaseConfig):
-            return v
-        return DatabaseConfig(**v)
-
-    @field_validator("logging", mode="before")
-    @classmethod
-    def validate_logging(cls, v: dict | LoggingConfig | None) -> LoggingConfig:
-        """Handle both dict and object inputs."""
-        if v is None:
-            return LoggingConfig()
-        if isinstance(v, LoggingConfig):
-            return v
-        return LoggingConfig(**v)
-
-    @field_validator("session", mode="before")
-    @classmethod
-    def validate_session(cls, v: dict | SessionConfig | None) -> SessionConfig:
-        """Handle both dict and object inputs."""
-        if v is None:
-            return SessionConfig()
-        if isinstance(v, SessionConfig):
-            return v
-        return SessionConfig(**v)
-
-    @field_validator("planning", mode="before")
-    @classmethod
-    def validate_planning(cls, v: dict | PlanningSystemConfig | None) -> PlanningSystemConfig:
-        """Handle both dict and object inputs."""
-        if v is None:
-            return PlanningSystemConfig()
-        if isinstance(v, PlanningSystemConfig):
-            return v
-        return PlanningSystemConfig(**v)
-
-    @field_validator("memory", mode="before")
-    @classmethod
-    def validate_memory(cls, v: dict | MemorySystemConfig | None) -> MemorySystemConfig:
-        """Handle both dict and object inputs."""
-        if v is None:
-            return MemorySystemConfig()
-        if isinstance(v, MemorySystemConfig):
-            return v
-        return MemorySystemConfig(**v)
-
-    @field_validator("skill_evolution", mode="before")
-    @classmethod
-    def validate_skill_evolution(
-        cls, v: dict | SkillEvolutionConfig | None
-    ) -> SkillEvolutionConfig:
-        """Handle both dict and object inputs."""
-        if v is None:
-            return SkillEvolutionConfig()
-        if isinstance(v, SkillEvolutionConfig):
-            return v
-        return SkillEvolutionConfig(**v)
-
     @classmethod
     def from_yaml(cls, path: Path) -> ApplicationSettings:
         """Load settings from YAML file.
@@ -317,7 +245,7 @@ class ApplicationSettings(BaseModel):
         Returns:
             Nested dictionary
         """
-        result = {}
+        result: dict[str, Any] = {}
 
         for key, value in data.items():
             if "." in key:

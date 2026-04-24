@@ -162,6 +162,9 @@ Keep the summary under 200 words. Extract 3-7 key facts."""
             {"role": "user", "content": self.COMPRESSION_PROMPT.format(exchanges=exchanges_text)},
         ]
 
+        if self.llm_client is None:
+            raise RuntimeError("LLM client is not available")
+
         response = await self.llm_client.chat(messages)
         content = response.content if hasattr(response, "content") else str(response)
 
@@ -299,8 +302,8 @@ Keep the summary under 200 words. Extract 3-7 key facts."""
         to_compress_indices.sort()  # Restore original order
 
         # Group consecutive memories for better compression
-        groups = []
-        current_group = []
+        groups: list[list[dict[str, Any]]] = []
+        current_group: list[int] = []
 
         for idx in to_compress_indices:
             if not current_group or idx == current_group[-1] + 1:

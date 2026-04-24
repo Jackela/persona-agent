@@ -500,7 +500,9 @@ class PlanningEngine:
     def _get_llm_client(self) -> LLMClientProtocol | None:
         """Get LLM client from agent engine or return None."""
         if self.agent_engine and hasattr(self.agent_engine, "llm_client"):
-            return self.agent_engine.llm_client
+            client = self.agent_engine.llm_client
+            if client is not None:
+                return client  # type: ignore[return-value]
         return None
 
     async def should_plan(

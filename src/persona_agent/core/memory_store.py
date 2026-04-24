@@ -195,23 +195,23 @@ class MemoryStore:
 
         memories = []
         for row in rows:  # Keep DESC order - most recent first
+            user_msg = self._encryptor.decrypt(row["user_message"])
+            assistant_msg = self._encryptor.decrypt(row["assistant_message"])
+            if user_msg is None or assistant_msg is None:
+                continue
+
+            embedding_raw = self._encryptor.decrypt(row["embedding"])
+            metadata_raw = self._encryptor.decrypt(row["metadata"])
+
             memories.append(
                 Memory(
                     id=str(row["id"]),
                     session_id=row["session_id"],
                     timestamp=row["timestamp"],
-                    user_message=self._encryptor.decrypt(row["user_message"]),
-                    assistant_message=self._encryptor.decrypt(row["assistant_message"]),
-                    embedding=(
-                        json.loads(self._encryptor.decrypt(row["embedding"]))
-                        if row["embedding"]
-                        else None
-                    ),
-                    metadata=(
-                        json.loads(self._encryptor.decrypt(row["metadata"]))
-                        if row["metadata"]
-                        else None
-                    ),
+                    user_message=user_msg,
+                    assistant_message=assistant_msg,
+                    embedding=json.loads(embedding_raw) if embedding_raw is not None else None,
+                    metadata=json.loads(metadata_raw) if metadata_raw is not None else None,
                 )
             )
 
@@ -271,26 +271,28 @@ class MemoryStore:
         scored_memories.sort(key=lambda x: x[0], reverse=True)
         top_rows = scored_memories[:limit]
 
-        return [
-            Memory(
-                id=str(row["id"]),
-                session_id=row["session_id"],
-                timestamp=row["timestamp"],
-                user_message=self._encryptor.decrypt(row["user_message"]),
-                assistant_message=self._encryptor.decrypt(row["assistant_message"]),
-                embedding=(
-                    json.loads(self._encryptor.decrypt(row["embedding"]))
-                    if row["embedding"]
-                    else None
-                ),
-                metadata=(
-                    json.loads(self._encryptor.decrypt(row["metadata"]))
-                    if row["metadata"]
-                    else None
-                ),
+        memories: list[Memory] = []
+        for _, row in top_rows:
+            _user_msg = self._encryptor.decrypt(row["user_message"])
+            _assistant_msg = self._encryptor.decrypt(row["assistant_message"])
+            if _user_msg is None or _assistant_msg is None:
+                continue
+
+            embedding_raw = self._encryptor.decrypt(row["embedding"])
+            metadata_raw = self._encryptor.decrypt(row["metadata"])
+
+            memories.append(
+                Memory(
+                    id=str(row["id"]),
+                    session_id=row["session_id"],
+                    timestamp=row["timestamp"],
+                    user_message=_user_msg,
+                    assistant_message=_assistant_msg,
+                    embedding=json.loads(embedding_raw) if embedding_raw is not None else None,
+                    metadata=json.loads(metadata_raw) if metadata_raw is not None else None,
+                )
             )
-            for _, row in top_rows
-        ]
+        return memories
 
     async def get_or_create_user_model(self, user_id: str) -> UserModel:
         """Get or create a user model.
@@ -310,20 +312,15 @@ class MemoryStore:
             row = cursor.fetchone()
 
         if row:
+            traits_raw = self._encryptor.decrypt(row["traits"])
+            preferences_raw = self._encryptor.decrypt(row["preferences"])
+            interaction_patterns_raw = self._encryptor.decrypt(row["interaction_patterns"])
             return UserModel(
                 user_id=row["user_id"],
-                traits=json.loads(self._encryptor.decrypt(row["traits"])) if row["traits"] else {},
-                preferences=(
-                    json.loads(self._encryptor.decrypt(row["preferences"]))
-                    if row["preferences"]
-                    else {}
-                ),
+                traits=json.loads(traits_raw) if traits_raw is not None else {},
+                preferences=json.loads(preferences_raw) if preferences_raw is not None else {},
                 relationship_stage=row["relationship_stage"] or "initial",
-                interaction_patterns=(
-                    json.loads(self._encryptor.decrypt(row["interaction_patterns"]))
-                    if row["interaction_patterns"]
-                    else []
-                ),
+                interaction_patterns=json.loads(interaction_patterns_raw) if interaction_patterns_raw is not None else [],
                 created_at=row["created_at"],
                 updated_at=row["updated_at"],
             )
@@ -432,18 +429,17 @@ class MemoryStore:
 
             rows = cursor.fetchall()
 
-        return [
-            {
-                "summary": self._encryptor.decrypt(row["summary"]),
-                "key_points": (
-                    json.loads(self._encryptor.decrypt(row["key_points"]))
-                    if row["key_points"]
-                    else []
-                ),
-                "timestamp": row["timestamp"],
-            }
-            for row in reversed(rows)
-        ]
+        results = []
+        for row in reversed(rows):
+            key_points_raw = self._encryptor.decrypt(row["key_points"])
+            results.append(
+                {
+                    "summary": self._encryptor.decrypt(row["summary"]),
+                    "key_points": json.loads(key_points_raw) if key_points_raw is not None else [],
+                    "timestamp": row["timestamp"],
+                }
+            )
+        return results
 
     def close(self) -> None:
         """Close database connections."""

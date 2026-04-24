@@ -84,7 +84,7 @@ class TaskExecutor:
             execution_time_ms = int((time.monotonic() - start_time) * 1000)
 
             return TaskResult.success_result(
-                output=response,
+                output=str(response),
                 execution_time_ms=execution_time_ms,
             )
 
@@ -237,7 +237,7 @@ class PlanExecutor:
         on_task_fail: TaskCallback | None,
     ) -> dict[str, Any]:
         """Internal execution loop."""
-        results = {
+        results: dict[str, Any] = {
             "plan_id": plan.id,
             "goal": plan.goal,
             "completed_tasks": [],

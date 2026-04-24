@@ -34,9 +34,9 @@ class CharacterNotFoundError(CharacterServiceError):
         super().__init__(
             f"Character '{character_name}' not found",
             character_name=character_name,
-            code="CHARACTER_NOT_FOUND",
             **kwargs,
         )
+        self.code = "CHARACTER_NOT_FOUND"
 
 
 class CharacterLoadError(CharacterServiceError):
@@ -46,9 +46,9 @@ class CharacterLoadError(CharacterServiceError):
         super().__init__(
             f"Failed to load character '{character_name}': {reason}",
             character_name=character_name,
-            code="CHARACTER_LOAD_ERROR",
             **kwargs,
         )
+        self.code = "CHARACTER_LOAD_ERROR"
         self.details["reason"] = reason
 
 

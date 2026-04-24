@@ -24,6 +24,10 @@ from persona_agent.skills.registry import SkillRegistry, get_registry
 from persona_agent.tools.base import ToolContext
 from persona_agent.tools.discovery import ToolRegistry, get_default_registry
 from persona_agent.utils.llm_client import LLMClient
+from persona_agent.utils.logging_config import (
+    clear_correlation_id,
+    set_correlation_id,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -96,56 +100,62 @@ class AgentEngine:
         Returns:
             Response string or async iterator for streaming
         """
-        if not self.llm_client:
-            raise RuntimeError("LLM client not configured")
+        correlation_id = str(uuid.uuid4())
+        set_correlation_id(correlation_id)
 
-        # Try skills first
-        mood_engine = self.persona_manager.get_mood_engine()
-        skill_context = SkillContext(
-            user_input=user_input,
-            conversation_history=[],
-            current_mood=mood_engine.current_state.name if mood_engine else "neutral",
-            session_id=self.session_id,
-            memory_store=self.memory_store,
-            persona_manager=self.persona_manager,
-        )
+        try:
+            if not self.llm_client:
+                raise RuntimeError("LLM client not configured")
 
-        skill_result = await self.skill_registry.execute_matching(skill_context)
-        if skill_result and skill_result.success and skill_result.response:
-            # Store the exchange
-            await self._store_exchange(user_input, skill_result.response)
-            return skill_result.response
+            # Try skills first
+            mood_engine = self.persona_manager.get_mood_engine()
+            skill_context = SkillContext(
+                user_input=user_input,
+                conversation_history=[],
+                current_mood=mood_engine.current_state.name if mood_engine else "neutral",
+                session_id=self.session_id,
+                memory_store=self.memory_store,
+                persona_manager=self.persona_manager,
+            )
 
-        # Check if planning is needed
-        if enable_planning and await self.planning_engine.should_plan(user_input):
-            return await self._handle_with_planning(user_input, on_plan_progress)
+            skill_result = await self.skill_registry.execute_matching(skill_context)
+            if skill_result and skill_result.success and skill_result.response:
+                # Store the exchange
+                await self._store_exchange(user_input, skill_result.response)
+                return skill_result.response
 
-        # Update mood based on input
-        self.persona_manager.update_mood(user_input)
+            # Check if planning is needed
+            if enable_planning and await self.planning_engine.should_plan(user_input):
+                return await self._handle_with_planning(user_input, on_plan_progress)
 
-        # Build system prompt
-        system_prompt = self.persona_manager.build_system_prompt()
+            # Update mood based on input
+            self.persona_manager.update_mood(user_input)
 
-        # Build messages
-        messages = [{"role": "system", "content": system_prompt}]
+            # Build system prompt
+            system_prompt = self.persona_manager.build_system_prompt()
 
-        # Add relevant memories (simplified - just recent)
-        memories = await self.memory_store.retrieve_recent(self.session_id, limit=10)
-        for memory in memories:
-            messages.append({"role": "user", "content": memory.user_message})
-            messages.append({"role": "assistant", "content": memory.assistant_message})
+            # Build messages
+            messages = [{"role": "system", "content": system_prompt}]
 
-        # Add current input
-        messages.append({"role": "user", "content": user_input})
+            # Add relevant memories (simplified - just recent)
+            memories = await self.memory_store.retrieve_recent(self.session_id, limit=10)
+            for memory in memories:
+                messages.append({"role": "user", "content": memory.user_message})
+                messages.append({"role": "assistant", "content": memory.assistant_message})
 
-        # Generate response
-        if stream:
-            return self._stream_response(messages)
-        else:
-            response = await self.llm_client.chat(messages)
-            styled = self._apply_style(response.content)
-            await self._store_exchange(user_input, styled)
-            return styled
+            # Add current input
+            messages.append({"role": "user", "content": user_input})
+
+            # Generate response
+            if stream:
+                return self._stream_response(messages)
+            else:
+                response = await self.llm_client.chat(messages)
+                styled = self._apply_style(response.content)
+                await self._store_exchange(user_input, styled)
+                return styled
+        finally:
+            clear_correlation_id()
 
     async def _handle_with_planning(
         self,

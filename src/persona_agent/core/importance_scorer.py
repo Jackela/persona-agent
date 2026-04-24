@@ -144,6 +144,9 @@ Assistant: {assistant_message}
         assistant_message: str,
     ) -> ImportanceScore:
         """Use LLM to score importance."""
+        if self.llm_client is None:
+            raise RuntimeError("LLM client is not available")
+
         prompt = self.SCORING_PROMPT.format(
             user_message=user_message[:500],
             assistant_message=assistant_message[:500],

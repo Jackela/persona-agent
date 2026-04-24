@@ -12,6 +12,7 @@ from enum import Enum, auto
 from typing import Any, Self
 
 from persona_agent.core.planning.exceptions import CyclicDependencyError
+from persona_agent.exceptions import PersonaAgentError
 
 
 class TaskStatus(Enum):
@@ -552,14 +553,14 @@ class Plan:
         return plan
 
 
-class InvalidTaskStateError(Exception):
+class InvalidTaskStateError(PersonaAgentError):
     """Raised when an invalid state transition is attempted."""
 
     def __init__(self, message: str) -> None:
-        super().__init__(message)
+        super().__init__(message, code="INVALID_TASK_STATE")
 
 
-class InvalidPlanStateError(Exception):
+class InvalidPlanStateError(PersonaAgentError):
     """Raised when an invalid plan state transition is attempted."""
 
     def __init__(
@@ -572,7 +573,8 @@ class InvalidPlanStateError(Exception):
         states = [required_state] if isinstance(required_state, str) else required_state
         super().__init__(
             f"Plan {plan_id} is in state '{current_state}', "
-            f"but required state is one of: {states}"
+            f"but required state is one of: {states}",
+            code="INVALID_PLAN_STATE",
         )
         self.plan_id = plan_id
         self.current_state = current_state

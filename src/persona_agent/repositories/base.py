@@ -13,6 +13,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Generic, TypeVar
 
+from persona_agent.exceptions import PersonaAgentError
+
 # Type variables for generic repository typing
 T = TypeVar("T")
 ID = TypeVar("ID")
@@ -68,10 +70,11 @@ class QueryFilter:
     value: Any
 
 
-class RepositoryError(Exception):
+class RepositoryError(PersonaAgentError):
     """Base exception for repository errors."""
 
-    pass
+    def __init__(self, message: str, *, details: dict | None = None) -> None:
+        super().__init__(message, code="REPOSITORY_ERROR", details=details)
 
 
 class EntityNotFoundError(RepositoryError):

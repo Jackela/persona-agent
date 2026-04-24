@@ -12,6 +12,12 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 
 class LLMResponse:
@@ -90,6 +96,14 @@ class OpenAIClient(BaseLLMClient):
             timeout=60.0,
         )
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(
+            (httpx.HTTPStatusError, httpx.ConnectError, httpx.ReadTimeout)
+        ),
+        reraise=True,
+    )
     async def chat(
         self,
         messages: list[dict[str, str]],
@@ -115,6 +129,14 @@ class OpenAIClient(BaseLLMClient):
 
         return LLMResponse(content, payload["model"], usage)
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(
+            (httpx.HTTPStatusError, httpx.ConnectError, httpx.ReadTimeout)
+        ),
+        reraise=True,
+    )
     async def chat_stream(
         self,
         messages: list[dict[str, str]],
@@ -173,6 +195,14 @@ class AnthropicClient(BaseLLMClient):
             timeout=60.0,
         )
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(
+            (httpx.HTTPStatusError, httpx.ConnectError, httpx.ReadTimeout)
+        ),
+        reraise=True,
+    )
     async def chat(
         self,
         messages: list[dict[str, str]],
@@ -209,6 +239,14 @@ class AnthropicClient(BaseLLMClient):
 
         return LLMResponse(content, payload["model"], usage)
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(
+            (httpx.HTTPStatusError, httpx.ConnectError, httpx.ReadTimeout)
+        ),
+        reraise=True,
+    )
     async def chat_stream(
         self,
         messages: list[dict[str, str]],
@@ -265,10 +303,18 @@ class OllamaClient(BaseLLMClient):
             base_url: Ollama API base URL (defaults to OLLAMA_BASE_URL env var or http://localhost:11434)
             model: Model name (defaults to OLLAMA_MODEL env var or qwen2.5)
         """
-        self.base_url = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.base_url: str = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         self.default_model = model or os.getenv("OLLAMA_MODEL", "qwen2.5")
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=60.0)
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(
+            (httpx.HTTPStatusError, httpx.ConnectError, httpx.ReadTimeout)
+        ),
+        reraise=True,
+    )
     async def chat(
         self,
         messages: list[dict[str, str]],
@@ -305,6 +351,14 @@ class OllamaClient(BaseLLMClient):
             usage=usage,
         )
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(
+            (httpx.HTTPStatusError, httpx.ConnectError, httpx.ReadTimeout)
+        ),
+        reraise=True,
+    )
     async def chat_stream(
         self,
         messages: list[dict[str, str]],

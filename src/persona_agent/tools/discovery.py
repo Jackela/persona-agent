@@ -267,7 +267,7 @@ class ToolRegistry:
         Returns:
             List of discovered tool metadata
         """
-        discovered = []
+        discovered: list[ToolMetadata] = []
 
         try:
             module = importlib.import_module(module_path)
@@ -301,7 +301,7 @@ class ToolRegistry:
             List of discovered tool metadata
         """
         directory = Path(directory)
-        discovered = []
+        discovered: list[ToolMetadata] = []
 
         if not directory.exists():
             logger.warning(f"Directory not found: {directory}")

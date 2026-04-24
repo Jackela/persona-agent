@@ -1,11 +1,53 @@
 """Structured logging configuration for Persona Agent."""
 
+import contextvars
 import json
 import logging
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+# Context variable for correlation ID
+_correlation_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "correlation_id", default="unknown"
+)
+
+
+class CorrelationIdFilter(logging.Filter):
+    """Filter that adds correlation_id to log records.
+
+    Uses a ContextVar so the correlation ID is propagated across
+    async boundaries without explicit passing.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Add correlation_id to the log record."""
+        record.correlation_id = _correlation_id_var.get()
+        return True
+
+
+def set_correlation_id(correlation_id: str) -> None:
+    """Set the current correlation ID in the context variable.
+
+    Args:
+        correlation_id: The correlation ID to set
+    """
+    _correlation_id_var.set(correlation_id)
+
+
+def get_correlation_id() -> str:
+    """Get the current correlation ID from the context variable.
+
+    Returns:
+        Current correlation ID or "unknown" if not set
+    """
+    return _correlation_id_var.get()
+
+
+def clear_correlation_id() -> None:
+    """Reset the correlation ID to the default value."""
+    _correlation_id_var.set("unknown")
 
 
 class JSONFormatter(logging.Formatter):
@@ -83,14 +125,18 @@ def setup_logging(
     numeric_level = getattr(logging, level.upper(), logging.INFO)
     root.setLevel(numeric_level)
 
+    # Correlation ID filter (applied to all handlers)
+    correlation_filter = CorrelationIdFilter()
+
     # Console handler
     console_handler = logging.StreamHandler(sys.stderr)
     console_handler.setLevel(numeric_level)
+    console_handler.addFilter(correlation_filter)
 
     if json_format:
         console_handler.setFormatter(JSONFormatter())
     else:
-        fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        fmt = "%(asctime)s - %(name)s - %(levelname)s - [%(correlation_id)s] - %(message)s"
         console_handler.setFormatter(ColoredFormatter(fmt))
 
     root.addHandler(console_handler)
@@ -102,6 +148,7 @@ def setup_logging(
 
         file_handler = logging.FileHandler(log_path, encoding="utf-8")
         file_handler.setLevel(numeric_level)
+        file_handler.addFilter(correlation_filter)
         file_handler.setFormatter(JSONFormatter())
         root.addHandler(file_handler)
 

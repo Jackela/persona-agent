@@ -198,7 +198,7 @@ class MemoryStoreV2(MemoryStore):
                     self._encryptor.encrypt(json.dumps(metadata)) if metadata else None,
                     importance_data["score"],
                     importance_data["level"],
-                    self._encryptor.encrypt(importance_data["reasoning"]),
+                    self._encryptor.encrypt(str(importance_data["reasoning"])),
                     False,
                 ),
             )
@@ -222,9 +222,9 @@ class MemoryStoreV2(MemoryStore):
         logger.debug(
             f"Stored memory for session {session_id} with importance {importance_data['score']}"
         )
-        return memory_id
+        return memory_id if memory_id is not None else -1
 
-    async def retrieve_relevant(
+    async def retrieve_relevant(  # type: ignore[override]
         self,
         query: str,
         session_id: str | None = None,
@@ -317,9 +317,9 @@ class MemoryStoreV2(MemoryStore):
                 where_clauses.append("session_id = ?")
                 params.append(session_id)
 
-            if min_importance:
+            if min_importance is not None:
                 where_clauses.append("importance_score >= ?")
-                params.append(min_importance)
+                params.append(str(min_importance))
 
             where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
 
@@ -350,26 +350,30 @@ class MemoryStoreV2(MemoryStore):
 
     def _row_to_enhanced_memory(self, row: sqlite3.Row) -> EnhancedMemory:
         """Convert database row to EnhancedMemory."""
+        row_dict = dict(row)
+        user_msg = self._encryptor.decrypt(row["user_message"])
+        assistant_msg = self._encryptor.decrypt(row["assistant_message"])
+        if user_msg is None or assistant_msg is None:
+            raise ValueError("user_message and assistant_message cannot be None")
+
+        embedding_raw = self._encryptor.decrypt(row["embedding"])
+        metadata_raw = self._encryptor.decrypt(row["metadata"])
+        compressed_from_raw = row["compressed_from"]
+
         return EnhancedMemory(
             id=str(row["id"]),
             session_id=row["session_id"],
             timestamp=row["timestamp"],
-            user_message=self._encryptor.decrypt(row["user_message"]),
-            assistant_message=self._encryptor.decrypt(row["assistant_message"]),
-            embedding=(
-                json.loads(self._encryptor.decrypt(row["embedding"])) if row["embedding"] else None
-            ),
-            metadata=(
-                json.loads(self._encryptor.decrypt(row["metadata"])) if row["metadata"] else None
-            ),
-            importance_score=row.get("importance_score", 3),
-            importance_level=row.get("importance_level", "MEDIUM"),
-            importance_reasoning=self._encryptor.decrypt(row.get("importance_reasoning")) or "",
-            is_compressed=bool(row.get("is_compressed", 0)),
-            compressed_from=(
-                json.loads(row["compressed_from"]) if row.get("compressed_from") else None
-            ),
-            compression_summary=self._encryptor.decrypt(row.get("compression_summary")),
+            user_message=user_msg,
+            assistant_message=assistant_msg,
+            embedding=json.loads(embedding_raw) if embedding_raw is not None else None,
+            metadata=json.loads(metadata_raw) if metadata_raw is not None else None,
+            importance_score=row_dict.get("importance_score", 3),
+            importance_level=row_dict.get("importance_level", "MEDIUM"),
+            importance_reasoning=self._encryptor.decrypt(row["importance_reasoning"]) or "",
+            is_compressed=bool(row_dict.get("is_compressed", 0)),
+            compressed_from=json.loads(compressed_from_raw) if compressed_from_raw is not None else None,
+            compression_summary=self._encryptor.decrypt(row["compression_summary"]),
         )
 
     async def compress_session_memories(
@@ -421,11 +425,17 @@ class MemoryStoreV2(MemoryStore):
             )
 
             if self.importance_scorer:
-                from persona_agent.core.importance_scorer import ImportanceLevel
+                from persona_agent.core.importance_scorer import ImportanceScore
 
                 score_val = row.get("importance_score", 3)
                 importance_scores.append(
-                    ImportanceLevel(score_val) if 1 <= score_val <= 5 else ImportanceLevel.MEDIUM
+                    ImportanceScore(
+                        score=score_val,
+                        level=ImportanceScore.from_dict({"score": score_val}).level,
+                        reasoning="",
+                        category="unknown",
+                        confidence=0.5,
+                    )
                 )
 
         # Select groups for compression

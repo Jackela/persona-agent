@@ -18,6 +18,8 @@ import tempfile
 from dataclasses import dataclass
 from typing import Any
 
+from persona_agent.exceptions import PersonaAgentError
+
 
 @dataclass
 class SandboxConfig:
@@ -82,23 +84,25 @@ class SandboxConfig:
                 "breakpoint",
             ]
 
-
-class SecurityError(Exception):
+class SecurityError(PersonaAgentError):
     """Raised when security policy is violated."""
 
-    pass
+    def __init__(self, message: str, *, details: dict | None = None) -> None:
+        super().__init__(message, code="SECURITY_ERROR", details=details)
 
 
-class TimeoutError(Exception):
+class TimeoutError(PersonaAgentError):
     """Raised when execution times out."""
 
-    pass
+    def __init__(self, message: str, *, details: dict | None = None) -> None:
+        super().__init__(message, code="TIMEOUT_ERROR", details=details)
 
 
-class MemoryLimitError(Exception):
+class MemoryLimitError(PersonaAgentError):
     """Raised when memory limit is exceeded."""
 
-    pass
+    def __init__(self, message: str, *, details: dict | None = None) -> None:
+        super().__init__(message, code="MEMORY_LIMIT_ERROR", details=details)
 
 
 class RestrictedPythonExecutor:

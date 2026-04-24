@@ -37,8 +37,8 @@ class SummaryMetadata:
 
     original_count: int
     source_date_range: tuple[str, str] | None = None
-    key_entities: list[str] = None
-    key_themes: list[str] = None
+    key_entities: list[str] | None = None
+    key_themes: list[str] | None = None
     confidence: float = 0.0
 
     def __post_init__(self):

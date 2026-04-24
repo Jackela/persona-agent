@@ -24,6 +24,7 @@ from persona_agent.core.schemas import (
     DynamicContext,
     ValidationResult,
 )
+from persona_agent.exceptions import PersonaAgentError
 from persona_agent.utils.llm_client import LLMClient
 
 logger = logging.getLogger(__name__)
@@ -1000,10 +1001,11 @@ class ConsistencyValidator:
 # ============================================================================
 
 
-class ValidationError(Exception):
+class ValidationError(PersonaAgentError):
     """Exception raised when validation fails catastrophically."""
 
-    pass
+    def __init__(self, message: str, *, details: dict | None = None) -> None:
+        super().__init__(message, code="VALIDATION_ERROR", details=details)
 
 
 # ============================================================================

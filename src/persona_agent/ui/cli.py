@@ -114,7 +114,7 @@ async def _chat_async(
             except CharacterNotFoundError:
                 formatter.print_error(f"Character '{persona}' not found.")
                 return
-            except Exception as e:
+            except (OSError, ValueError) as e:
                 logger.error(f"Failed to load character '{persona}': {e}")
                 formatter.print_error(f"Failed to load character: {e}")
                 return
@@ -160,7 +160,7 @@ async def _chat_async(
                 except PersonaAgentError as e:
                     logger.error(f"Chat error: {e}")
                     formatter.print_error(f"\n{e.message}\n")
-                except Exception as e:
+                except (OSError, RuntimeError) as e:
                     logger.exception(f"Unexpected error in chat loop: {e}")
                     formatter.print_error("\nAn unexpected error occurred. Please try again.\n")
 
@@ -171,7 +171,7 @@ async def _chat_async(
         except ChatServiceError as e:
             logger.error(f"Chat service error: {e}")
             formatter.print_error(f"Chat service error: {e}")
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.exception(f"Unexpected chat error: {e}")
             formatter.print_error(f"An unexpected error occurred: {e}")
 
@@ -234,7 +234,7 @@ async def _plan_create_async(goal: str, execute: bool) -> None:
             else:
                 formatter.print_error(f"\nPlan failed. Status: {results['status']}")
 
-    except Exception as e:
+    except (OSError, RuntimeError) as e:
         logger.error(f"Plan creation failed: {e}")
         formatter.print_error(f"Failed to create plan: {e}")
 
@@ -271,7 +271,7 @@ def list_characters() -> None:
             rows=[[char] for char in characters],
             title="Available Characters",
         )
-    except Exception as e:
+    except (OSError, ValueError) as e:
         logger.error(f"Error listing characters: {e}")
         formatter.print_error(f"Error listing characters: {e}")
 
@@ -298,7 +298,7 @@ def show_character(character: str) -> None:
                 border_style="green",
             )
         )
-    except Exception as e:
+    except (OSError, ValueError) as e:
         logger.error(f"Error loading character '{character}': {e}")
         formatter.print_error(f"Error loading character: {e}")
 
@@ -345,7 +345,7 @@ def list_sessions(limit: int) -> None:
                     rows=rows,
                     title=f"Recent Sessions (last {len(sessions)})",
                 )
-        except Exception as e:
+        except (OSError, ValueError) as e:
             logger.error(f"Error reading sessions: {e}")
             formatter.print_error(f"Error reading sessions: {e}")
 
@@ -394,7 +394,7 @@ def session_info(session_id: str) -> None:
                             console.print(f"  [dim]{time_str}[/dim] You: {user_msg}...")
 
                 console.print()
-        except Exception as e:
+        except (OSError, ValueError) as e:
             logger.error(f"Error reading session info: {e}")
             formatter.print_error(f"Error reading session info: {e}")
 
@@ -417,7 +417,7 @@ def delete_session(session_id: str) -> None:
 
                 await service.delete_session(session_id)
                 formatter.print_success(f"Deleted session '{session_id}'.")
-        except Exception as e:
+        except (OSError, ValueError) as e:
             logger.error(f"Error deleting session: {e}")
             formatter.print_error(f"Error deleting session: {e}")
 
@@ -583,7 +583,7 @@ def memory_compact(older_than_days: int, dry_run: bool) -> None:
             else:
                 console.print("[dim]No memories needed compaction.[/dim]")
 
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.error(f"Compaction failed: {e}")
             formatter.print_error(f"Compaction failed: {e}")
 
@@ -609,7 +609,7 @@ def memory_stats() -> None:
         console.print(f"    Relations: {stats['semantic']['relations']}")
         console.print()
 
-    except Exception as e:
+    except (OSError, RuntimeError) as e:
         logger.error(f"Failed to get memory stats: {e}")
         formatter.print_error(f"Failed to get memory stats: {e}")
 

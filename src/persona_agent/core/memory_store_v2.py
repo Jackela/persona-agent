@@ -20,8 +20,9 @@ import aiosqlite
 
 from persona_agent.core.importance_scorer import ImportanceScorer
 from persona_agent.core.memory_compression import MemoryCompressor
-from persona_agent.core.memory_store import Memory, MemoryStore
+from persona_agent.core.memory_store import DEFAULT_DB_PATH, Memory, MemoryStore
 from persona_agent.core.vector_index import SimpleEmbeddingProvider, VectorMemoryIndex
+from persona_agent.exceptions import LLMError
 
 if TYPE_CHECKING:
     from persona_agent.core.importance_scorer import LLMClient
@@ -52,7 +53,7 @@ class MemoryStoreV2(MemoryStore):
 
     def __init__(
         self,
-        db_path: Path | str = "memory/persona_agent.db",
+        db_path: Path | str = DEFAULT_DB_PATH,
         llm_client: LLMClient | None = None,
         enable_importance_scoring: bool = True,
         enable_vector_index: bool = True,
@@ -183,7 +184,7 @@ class MemoryStoreV2(MemoryStore):
                     "level": score.level.name,
                     "reasoning": score.reasoning[:500],  # Truncate
                 }
-            except Exception as e:
+            except (LLMError, ValueError, RuntimeError) as e:
                 logger.warning(f"Importance scoring failed: {e}")
 
         await self._ensure_initialized()
@@ -223,7 +224,7 @@ class MemoryStoreV2(MemoryStore):
                     timestamp=timestamp,
                     metadata={"importance_score": importance_data["score"]},
                 )
-            except Exception as e:
+            except (ConnectionError, RuntimeError) as e:
                 logger.warning(f"Vector index update failed: {e}")
 
         logger.debug(
@@ -278,7 +279,7 @@ class MemoryStoreV2(MemoryStore):
                         ]
 
                     return sorted_memories[:limit]
-            except Exception as e:
+            except (ConnectionError, RuntimeError, ValueError) as e:
                 logger.warning(f"Vector search failed, using fallback: {e}")
 
         # Fallback to keyword-based retrieval

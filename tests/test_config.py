@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 
 import pytest
-import yaml
 
 from persona_agent.config.loader import ConfigLoader
 from persona_agent.config.schemas.character import (
@@ -250,22 +249,13 @@ class TestUserConfiguration:
 
     def test_load_pixel_character(self) -> None:
         """Test loading the actual Pixel character profile."""
-        # This test verifies the actual user config can be loaded
-        config_path = Path("/mnt/c/Users/k7407/OneDrive")
-        if not config_path.exists():
-            pytest.skip("User config path not available")
-
-        char_file = config_path / "character_profile.yaml"
+        char_file = Path(__file__).parent.parent / "config" / "characters" / "pixel.yaml"
         if not char_file.exists():
-            pytest.skip("Character profile not found")
+            pytest.skip("Pixel character profile not found")
 
-        # Try to load, but handle format differences gracefully
-        try:
-            profile = CharacterProfile.from_yaml(char_file)
-            assert profile.name
-            assert profile.relationship
-        except (yaml.parser.ParserError, KeyError, TypeError):
-            pytest.skip("Character profile format not compatible with current schema")
+        profile = CharacterProfile.from_yaml(char_file)
+        assert profile.name
+        assert profile.relationship
 
     def test_load_mood_states(self) -> None:
         """Test loading mood states from markdown."""

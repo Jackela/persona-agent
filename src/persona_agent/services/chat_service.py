@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from persona_agent.config.schemas.character import CharacterProfile
+from persona_agent.core.memory_store import DEFAULT_DB_PATH
 from persona_agent.repositories import Session, SessionRepository
 from persona_agent.services.character_service import (
     CharacterNotFoundError,
@@ -129,7 +130,7 @@ class ChatService:
         character_service: CharacterService | None = None,
         session_service: SessionService | None = None,
         llm_client: LLMClient | None = None,
-        db_path: str | Path = "memory/persona_agent.db",
+        db_path: str | Path = DEFAULT_DB_PATH,
         default_persona: str = "default",
         llm_provider: str = "ollama",
         llm_model: str | None = None,

@@ -18,6 +18,7 @@ from persona_agent.core.planning import (
     PlanningEngine,
 )
 from persona_agent.core.planning.models import Plan
+from persona_agent.exceptions import PlanningError
 from persona_agent.mcp.client import MCPClient, get_mcp_client
 from persona_agent.skills.base import SkillContext
 from persona_agent.skills.registry import SkillRegistry, get_registry
@@ -191,7 +192,7 @@ class AgentEngine:
             # Format response
             return self._format_plan_results(results)
 
-        except Exception as e:
+        except (PlanningError, RuntimeError) as e:
             logger.error(f"Plan execution failed: {e}")
             return f"I encountered an error while working on your request: {e}"
 
@@ -350,7 +351,7 @@ class AgentEngine:
         try:
             result = await tool.execute(context, **params)
             return result.to_dict()
-        except Exception as e:
+        except (PlanningError, RuntimeError) as e:
             logger.exception(f"Tool execution failed: {tool_name}")
             return {"success": False, "error": str(e)}
 

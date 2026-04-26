@@ -184,7 +184,7 @@ class FileReadTool(Tool):
                 }
             )
 
-        except Exception as e:
+        except (OSError, ValueError) as e:
             return ToolResult.error_result(f"Error reading file: {e}")
 
     def _resolve_path(self, path: str, working_dir: str) -> Path:
@@ -205,7 +205,7 @@ class FileReadTool(Tool):
                 return False, "Path traversal detected: path is outside working directory"
 
             return True, None
-        except Exception as e:
+        except (OSError, ValueError) as e:
             return False, f"Invalid path: {e}"
 
 
@@ -306,7 +306,7 @@ class FileWriteTool(Tool):
                 }
             )
 
-        except Exception as e:
+        except (OSError, ValueError) as e:
             return ToolResult.error_result(f"Error writing file: {e}")
 
     def _resolve_path(self, path: str, working_dir: str) -> Path:
@@ -326,7 +326,7 @@ class FileWriteTool(Tool):
                 return False, "Path traversal detected"
 
             return True, None
-        except Exception as e:
+        except (OSError, ValueError) as e:
             return False, f"Invalid path: {e}"
 
 
@@ -442,7 +442,7 @@ class FileListTool(Tool):
                 }
             )
 
-        except Exception as e:
+        except (OSError, ValueError) as e:
             return ToolResult.error_result(f"Error listing directory: {e}")
 
     def _resolve_path(self, path: str, working_dir: str) -> Path:
@@ -462,5 +462,5 @@ class FileListTool(Tool):
                 return False, "Path traversal detected"
 
             return True, None
-        except Exception as e:
+        except (OSError, ValueError) as e:
             return False, f"Invalid path: {e}"

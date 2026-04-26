@@ -21,10 +21,15 @@ from pathlib import Path
 from typing import Any
 
 import aiosqlite
+from platformdirs import user_data_dir
 
 from persona_agent.core.db_encryption import FernetColumnEncryptor
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_DB_PATH = (
+    Path(user_data_dir("persona-agent", "persona-agent")) / "memory" / "persona_agent.db"
+)
 
 
 @dataclass
@@ -60,7 +65,7 @@ class MemoryStore:
     but simplified for local deployment.
     """
 
-    def __init__(self, db_path: Path | str = "memory/persona_agent.db"):
+    def __init__(self, db_path: Path | str = DEFAULT_DB_PATH):
         """Initialize memory store.
 
         Args:
@@ -171,7 +176,7 @@ class MemoryStore:
             await conn.commit()
 
         logger.debug(f"Stored memory for session {session_id}")
-        return cursor.lastrowid
+        return cursor.lastrowid if cursor.lastrowid is not None else -1
 
     async def retrieve_recent(
         self,

@@ -947,9 +947,11 @@ class TestChatService:
             _ = ChatService()
 
             mock_char_service.assert_called_once()
-            mock_repo.assert_called_once_with("memory/persona_agent.db")
+            from persona_agent.core.memory_store import DEFAULT_DB_PATH
+
+            mock_repo.assert_called_once_with(DEFAULT_DB_PATH)
             mock_sess_service.assert_called_once_with(
-                "memory/persona_agent.db", session_repo=mock_repo.return_value
+                DEFAULT_DB_PATH, session_repo=mock_repo.return_value
             )
             mock_llm.assert_called_once_with(provider="ollama", model=None)
 

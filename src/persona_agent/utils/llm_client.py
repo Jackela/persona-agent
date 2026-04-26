@@ -19,6 +19,12 @@ from tenacity import (
     wait_exponential,
 )
 
+DEFAULT_OPENAI_MODEL = "gpt-4"
+DEFAULT_ANTHROPIC_MODEL = "claude-3-opus-20240229"
+DEFAULT_OLLAMA_MODEL = "qwen2.5"
+DEFAULT_OLLAMA_URL = "http://localhost:11434"
+DEFAULT_LLM_TIMEOUT = 60.0
+
 
 class LLMResponse:
     """LLM response wrapper."""
@@ -60,7 +66,7 @@ class BaseLLMClient(ABC):
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int | None = None,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[str]:  # type: ignore[override]
         """Stream chat completion.
 
         Args:
@@ -93,7 +99,7 @@ class OpenAIClient(BaseLLMClient):
         self.client = httpx.AsyncClient(
             base_url=self.base_url,
             headers={"Authorization": f"Bearer {self.api_key}"},
-            timeout=60.0,
+            timeout=DEFAULT_LLM_TIMEOUT,
         )
 
     @retry(
@@ -113,7 +119,7 @@ class OpenAIClient(BaseLLMClient):
     ) -> LLMResponse:
         """Send chat request."""
         payload: dict[str, Any] = {
-            "model": model or "gpt-4",
+            "model": model or DEFAULT_OPENAI_MODEL,
             "messages": messages,
             "temperature": temperature,
         }
@@ -143,10 +149,10 @@ class OpenAIClient(BaseLLMClient):
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int | None = None,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[str]:  # type: ignore[override]
         """Stream chat response."""
         payload: dict[str, Any] = {
-            "model": model or "gpt-4",
+            "model": model or DEFAULT_OPENAI_MODEL,
             "messages": messages,
             "temperature": temperature,
             "stream": True,
@@ -192,7 +198,7 @@ class AnthropicClient(BaseLLMClient):
                 "x-api-key": self.api_key,
                 "anthropic-version": "2023-06-01",
             },
-            timeout=60.0,
+            timeout=DEFAULT_LLM_TIMEOUT,
         )
 
     @retry(
@@ -222,7 +228,7 @@ class AnthropicClient(BaseLLMClient):
                 chat_messages.append(msg)
 
         payload: dict[str, Any] = {
-            "model": model or "claude-3-opus-20240229",
+            "model": model or DEFAULT_ANTHROPIC_MODEL,
             "messages": chat_messages,
             "temperature": temperature,
             "max_tokens": max_tokens or 1024,
@@ -253,7 +259,7 @@ class AnthropicClient(BaseLLMClient):
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int | None = None,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[str]:  # type: ignore[override]
         """Stream chat response."""
         system_msg = ""
         chat_messages = []
@@ -265,7 +271,7 @@ class AnthropicClient(BaseLLMClient):
                 chat_messages.append(msg)
 
         payload: dict[str, Any] = {
-            "model": model or "claude-3-opus-20240229",
+            "model": model or DEFAULT_ANTHROPIC_MODEL,
             "messages": chat_messages,
             "temperature": temperature,
             "max_tokens": max_tokens or 1024,
@@ -303,9 +309,9 @@ class OllamaClient(BaseLLMClient):
             base_url: Ollama API base URL (defaults to OLLAMA_BASE_URL env var or http://localhost:11434)
             model: Model name (defaults to OLLAMA_MODEL env var or qwen2.5)
         """
-        self.base_url: str = base_url or os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-        self.default_model = model or os.getenv("OLLAMA_MODEL", "qwen2.5")
-        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=60.0)
+        self.base_url: str = base_url or os.getenv("OLLAMA_BASE_URL", DEFAULT_OLLAMA_URL)
+        self.default_model = model or os.getenv("OLLAMA_MODEL", DEFAULT_OLLAMA_MODEL)
+        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=DEFAULT_LLM_TIMEOUT)
 
     @retry(
         stop=stop_after_attempt(3),
@@ -365,7 +371,7 @@ class OllamaClient(BaseLLMClient):
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int | None = None,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[str]:  # type: ignore[override]
         """Stream chat response."""
         payload: dict[str, Any] = {
             "model": model or self.default_model,

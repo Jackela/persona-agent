@@ -9,6 +9,7 @@ import pytest
 from persona_agent.core.importance_scorer import ImportanceLevel, ImportanceScore
 from persona_agent.core.memory_compression import CompressedMemory
 from persona_agent.core.memory_store_v2 import EnhancedMemory, MemoryStoreV2
+from persona_agent.exceptions import LLMError
 
 
 class TestEnhancedMemory:
@@ -324,7 +325,7 @@ class TestMemoryStoreV2Store:
         with patch.object(
             store_with_scorer.importance_scorer,
             "score_memory",
-            side_effect=Exception("LLM error"),
+            side_effect=LLMError("LLM error"),
         ):
             memory_id = await store_with_scorer.store(
                 session_id="test-session",
@@ -379,7 +380,7 @@ class TestMemoryStoreV2Store:
 
         # Mock the vector index to fail
         store.vector_index = AsyncMock()
-        store.vector_index.add_memory = AsyncMock(side_effect=Exception("Vector error"))
+        store.vector_index.add_memory = AsyncMock(side_effect=ConnectionError("Vector error"))
 
         memory_id = await store.store(
             session_id="test-session",
@@ -556,7 +557,7 @@ class TestMemoryStoreV2RetrieveRelevant:
 
         # Mock vector index to raise exception
         store.vector_index = AsyncMock()
-        store.vector_index.search = AsyncMock(side_effect=Exception("Vector search error"))
+        store.vector_index.search = AsyncMock(side_effect=ConnectionError("Vector search error"))
 
         await store.store(
             session_id="test-session",
@@ -1000,7 +1001,10 @@ class TestMemoryStoreV2CompressSessionMemories:
         )
 
         # Mock importance scorer
-        store.importance_scorer = MagicMock()
+        store.importance_scorer = AsyncMock()
+        store.importance_scorer.score_memory.return_value = ImportanceScore(
+            score=3, level=ImportanceLevel.MEDIUM, reasoning="Test", category="test", confidence=0.8
+        )
 
         compressed_memory = CompressedMemory(
             original_ids=["1", "2"],

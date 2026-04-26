@@ -250,7 +250,7 @@ class TestConfigLoaderFindConfigDir:
 
         with (
             patch.object(Path, "cwd", return_value=tmp_path / "nowhere"),
-            patch.object(Path, "home", return_value=tmp_path),
+            patch("persona_agent.config.loader.user_config_dir", return_value=str(user_config)),
         ):
             loader = ConfigLoader()
             assert loader.config_dir == user_config
@@ -261,7 +261,7 @@ class TestConfigLoaderFindConfigDir:
 
         with (
             patch.object(Path, "cwd", return_value=tmp_path / "nowhere"),
-            patch.object(Path, "home", return_value=tmp_path),
+            patch("persona_agent.config.loader.user_config_dir", return_value=str(user_config)),
         ):
             _ = ConfigLoader()
             assert user_config.exists()

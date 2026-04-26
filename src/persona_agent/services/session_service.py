@@ -7,6 +7,7 @@ through the SessionRepository, providing a clean API for session operations.
 from pathlib import Path
 from typing import Any
 
+from persona_agent.core.memory_store import DEFAULT_DB_PATH
 from persona_agent.repositories import Session, SessionRepository
 from persona_agent.utils.exceptions import PersonaAgentError
 
@@ -63,7 +64,7 @@ class SessionService:
 
     def __init__(
         self,
-        db_path: str | Path = "memory/persona_agent.db",
+        db_path: str | Path = DEFAULT_DB_PATH,
         session_repo: SessionRepository | None = None,
     ) -> None:
         """Initialize the session service.

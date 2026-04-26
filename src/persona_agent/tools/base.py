@@ -220,8 +220,13 @@ class Tool(ABC):
 
             async def execute(self, context: ToolContext, **params) -> ToolResult:
                 try:
-                    result = eval(params["expression"])
+                    import ast
+                    result = ast.literal_eval(params["expression"])
                     return ToolResult.success_result(result)
+                except (ValueError, SyntaxError):
+                    return ToolResult.error_result(
+                        "Invalid expression. Only safe literal expressions are allowed."
+                    )
                 except Exception as e:
                     return ToolResult.error_result(str(e))
     """

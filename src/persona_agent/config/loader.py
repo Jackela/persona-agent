@@ -3,6 +3,8 @@
 import logging
 from pathlib import Path
 
+from platformdirs import user_config_dir
+
 from persona_agent.config.schemas.character import CharacterProfile
 from persona_agent.config.schemas.linguistic import LinguisticStyle
 from persona_agent.config.schemas.mood import MoodDefinition
@@ -39,11 +41,7 @@ class ConfigLoader:
             return local_config
 
         # Fall back to user config
-        user_config = Path.home() / ".config" / "persona-agent"
-        if user_config.exists():
-            return user_config
-
-        # Create user config if neither exists
+        user_config = Path(user_config_dir("persona-agent", "persona-agent"))
         user_config.mkdir(parents=True, exist_ok=True)
         return user_config
 

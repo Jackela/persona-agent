@@ -92,7 +92,7 @@ class VectorMemoryIndex:
         except ImportError:
             logger.warning("ChromaDB not installed, vector search unavailable")
             return False
-        except Exception as e:
+        except (ConnectionError, RuntimeError) as e:
             logger.error(f"Failed to initialize vector store: {e}")
             return False
 
@@ -147,7 +147,7 @@ class VectorMemoryIndex:
             )
             return True
 
-        except Exception as e:
+        except (ConnectionError, RuntimeError) as e:
             logger.error(f"Failed to add memory to index: {e}")
             return False
 
@@ -217,7 +217,7 @@ class VectorMemoryIndex:
             memories.sort(key=lambda x: x["similarity"], reverse=True)
             return memories[:limit]
 
-        except Exception as e:
+        except (ConnectionError, RuntimeError) as e:
             logger.error(f"Vector search failed: {e}")
             return []
 
@@ -236,7 +236,7 @@ class VectorMemoryIndex:
         try:
             self._collection.delete(where={"session_id": session_id})
             return True
-        except Exception as e:
+        except (ConnectionError, RuntimeError) as e:
             logger.error(f"Failed to delete session memories: {e}")
             return False
 
@@ -256,7 +256,7 @@ class VectorMemoryIndex:
                 "indexed": True,
                 "collection": self.collection_name,
             }
-        except Exception as e:
+        except (ConnectionError, RuntimeError) as e:
             logger.error(f"Failed to get stats: {e}")
             return {"count": 0, "indexed": False, "error": str(e)}
 
@@ -311,7 +311,7 @@ class SimpleEmbeddingProvider:
                 )
             return embedding
 
-        except Exception as e:
+        except (ConnectionError, RuntimeError) as e:
             logger.warning(f"Embedding failed, using fallback: {e}")
             return self._keyword_embedding(text)
 

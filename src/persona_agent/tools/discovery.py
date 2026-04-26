@@ -254,7 +254,7 @@ class ToolRegistry:
             metadata.is_loaded = True
             logger.debug(f"Loaded tool: {name}")
             return instance
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"Failed to load tool '{name}': {e}")
             return None
 
@@ -381,7 +381,7 @@ class ToolDiscovery:
             try:
                 found = self.registry.discover_from_module(module_path)
                 discovered.extend(found)
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.warning(f"Failed to discover from {module_path}: {e}")
         return discovered
 

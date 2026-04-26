@@ -151,7 +151,7 @@ class CharacterService:
                 f"Invalid YAML: {e}",
                 file_path=str(path),
             ) from e
-        except Exception as e:
+        except (OSError, ValueError) as e:
             raise CharacterLoadError(
                 path.stem,
                 str(e),

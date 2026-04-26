@@ -75,10 +75,10 @@ class TaskExecutor:
         start_time = time.monotonic()
 
         try:
-            # Execute using agent engine
             response = await self.agent_engine.chat(
                 user_input=context,
                 stream=False,
+                enable_planning=False,
             )
 
             execution_time_ms = int((time.monotonic() - start_time) * 1000)
@@ -92,12 +92,10 @@ class TaskExecutor:
             execution_time_ms = int((time.monotonic() - start_time) * 1000)
             logger.error(f"Task {task.id} execution failed: {e}")
 
-            raise TaskExecutionError(
-                str(e),
-                task_id=task.id,
-                attempt=task.retry_count + 1,
-                max_retries=task.max_retries,
-            ) from e
+            return TaskResult.failure_result(
+                error=str(e),
+                execution_time_ms=execution_time_ms,
+            )
 
     def _build_task_context(self, task: Task, plan: Plan) -> str:
         """Build context for task execution.
@@ -215,7 +213,7 @@ class PlanExecutor:
             plan.mark_cancelled()
             raise
 
-        except Exception as e:
+        except (TaskExecutionError, RuntimeError) as e:
             logger.exception(f"Plan {plan.id} execution failed")
             plan.mark_failed()
             raise PlanExecutionError(
@@ -369,14 +367,14 @@ class PlanExecutor:
                 # Handle failure
                 await self._handle_task_failure(plan, task, task_result, results, on_task_fail)
 
-        except TaskExecutionError as e:
+        except Exception as e:
             await self._handle_task_failure(
                 plan,
                 task,
                 TaskResult.failure_result(str(e)),
                 results,
                 on_task_fail,
-                can_retry=e.can_retry,
+                can_retry=False,
             )
 
         # Report progress
@@ -395,13 +393,17 @@ class PlanExecutor:
     ) -> None:
         """Execute multiple tasks in parallel."""
 
-        # Create tasks for parallel execution
         async def execute_and_track(task: Task) -> None:
-            await self._execute_task(
-                plan, task, results, on_progress, on_task_complete, on_task_fail
-            )
+            try:
+                await self._execute_task(
+                    plan, task, results, on_progress, on_task_complete, on_task_fail
+                )
+            except Exception as e:
+                logger.error(f"Task {task.id} failed in parallel execution: {e}")
+                await self._handle_task_failure(
+                    plan, task, TaskResult.failure_result(str(e)), results, on_task_fail
+                )
 
-        # Execute all tasks concurrently
         await asyncio.gather(*[execute_and_track(t) for t in tasks])
 
     async def _handle_task_failure(

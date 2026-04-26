@@ -70,10 +70,10 @@ class TestTaskExecutor:
         plan = Plan(id="plan_1", goal="Test goal")
         task = Task(id="task_1", description="Test task")
 
-        with pytest.raises(TaskExecutionError) as exc_info:
-            await executor.execute(task, plan)
+        result = await executor.execute(task, plan)
 
-        assert exc_info.value.task_id == "task_1"
+        assert not result.success
+        assert "LLM error" in result.metadata["error"]
 
     @pytest.mark.asyncio
     async def test_build_task_context_with_dependencies(self, mock_agent_engine):

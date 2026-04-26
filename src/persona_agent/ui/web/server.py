@@ -497,7 +497,7 @@ async def get_stats(
             try:
                 if datetime.fromisoformat(last_activity).date() == today:
                     session_count_today += 1
-            except Exception:
+            except (ValueError, RuntimeError):
                 pass
 
     memory_stats = memory.get_stats()
@@ -576,7 +576,7 @@ async def create_session(
         return {"session_id": session_id}
     except ChatPersonaNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -639,7 +639,7 @@ async def delete_session(
     try:
         await session_service.delete_session(session_id)
         return {"deleted": True}
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -678,7 +678,7 @@ async def send_message(
         raise HTTPException(status_code=404, detail=str(e)) from e
     except ChatPersonaNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -694,7 +694,7 @@ async def _stream_event_generator(session_id: str, message: str, chat_service: C
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
     except ChatLLMError as e:
         yield f"data: {json.dumps({'error': f'LLM error: {e}'})}\n\n"
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         yield f"data: {json.dumps({'error': f'Unexpected error: {e}'})}\n\n"
 
 
@@ -823,7 +823,7 @@ async def get_character(
     try:
         char = character_service.get_character(name)
         return char.model_dump()
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
@@ -850,7 +850,7 @@ async def create_character(
         profile = CharacterProfile(**body.model_dump())
         path = character_service.create_character(profile)
         return {"saved_to": str(path)}
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
@@ -879,7 +879,7 @@ async def update_character(
         profile = CharacterProfile(**body.model_dump(exclude_none=True))
         path = character_service.update_character(name, profile)
         return {"saved_to": str(path)}
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 

@@ -145,7 +145,7 @@ relationship: "friend"
         """Test report generation with issues."""
         # Create invalid character
         char_file = temp_config_dir / "characters" / "test.yaml"
-        char_file.write_text("invalid: yaml: content: [")
+        char_file.write_text("invalid yaml content")
 
         validator = ConfigValidator(temp_config_dir)
         validator.validate_all()

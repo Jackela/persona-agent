@@ -70,7 +70,7 @@ class ConfigValidator:
                 if not profile.relationship:
                     self.warnings.append(f"Character {char_file.stem}: missing relationship")
 
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, RuntimeError) as e:
                 error_msg = str(e)
                 if "name" in error_msg.lower() and (
                     "required" in error_msg.lower() or "missing" in error_msg.lower()
@@ -90,7 +90,7 @@ class ConfigValidator:
                 if not profile.relationship:
                     self.warnings.append(f"Character {char_file.stem}: missing relationship")
 
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, RuntimeError) as e:
                 error_msg = str(e)
                 if "name" in error_msg.lower() and (
                     "required" in error_msg.lower() or "missing" in error_msg.lower()
@@ -117,7 +117,7 @@ class ConfigValidator:
                 if len(names) != len(set(names)):
                     self.errors.append(f"Mood file {mood_file.name}: duplicate mood names")
 
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, RuntimeError) as e:
                 self.errors.append(f"Mood file {mood_file.name}: {e}")
 
     def _validate_linguistic_styles(self) -> None:
@@ -136,7 +136,7 @@ class ConfigValidator:
                 if not style.kaomoji_lexicon:
                     self.warnings.append(f"Style {style_file.stem}: no kaomoji defined")
 
-            except Exception as e:
+            except (ValueError, TypeError, KeyError, RuntimeError) as e:
                 self.errors.append(f"Style {style_file.stem}: {e}")
 
     def get_report(self) -> dict[str, Any]:

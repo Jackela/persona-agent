@@ -634,7 +634,7 @@ class TestConsistencyValidatorValidate:
         with patch.object(
             validator,
             "_build_validation_prompts",
-            side_effect=Exception("Prompt building error"),
+            side_effect=RuntimeError("Prompt building error"),
         ):
             report = await validator.validate(
                 response="Hello!",
@@ -654,12 +654,13 @@ class TestConsistencyValidatorValidate:
         self, validator, dynamic_context, conversation_history
     ):
         """Test validate handles exceptions during scoring gracefully."""
-        # First call succeeds, second raises exception
         response = MagicMock()
         response.content = json.dumps({"score": 0.9})
         validator.llm_client.chat.side_effect = [
             response,
-            Exception("Dimension scoring failed"),
+            RuntimeError("Dimension scoring failed"),
+            response,
+            response,
             response,
             response,
             response,
@@ -961,7 +962,7 @@ class TestScoreDimensions:
     ):
         """Test _score_dimensions when some evaluations fail."""
         success_response = MagicMock(content=json.dumps({"score": 0.8}))
-        error_response = Exception("LLM error")
+        error_response = RuntimeError("LLM error")
 
         validator.llm_client.chat.side_effect = [
             success_response,
@@ -1087,7 +1088,7 @@ class TestScoreDimensions:
     @pytest.mark.asyncio
     async def test_evaluate_dimension_llm_exception(self, validator):
         """Test _evaluate_dimension handles LLM exception."""
-        validator.llm_client.chat.side_effect = Exception("LLM error")
+        validator.llm_client.chat.side_effect = RuntimeError("LLM error")
 
         score = await validator._evaluate_dimension(
             dim_name="value_alignment",
@@ -1175,7 +1176,7 @@ class TestGenerateCritique:
     @pytest.mark.asyncio
     async def test_generate_critique_llm_error(self, validator, dynamic_context):
         """Test _generate_critique handles LLM error."""
-        validator.llm_client.chat.side_effect = Exception("LLM error")
+        validator.llm_client.chat.side_effect = RuntimeError("LLM error")
 
         scores = {
             "value_alignment": 0.5,
@@ -1268,7 +1269,7 @@ class TestGenerateRevision:
         self, validator, dynamic_context, conversation_history
     ):
         """Test _generate_revision returns original on LLM error."""
-        validator.llm_client.chat.side_effect = Exception("LLM error")
+        validator.llm_client.chat.side_effect = RuntimeError("LLM error")
 
         scores = {
             "value_alignment": 0.5,

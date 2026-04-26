@@ -128,7 +128,7 @@ Keep the summary under 200 words. Extract 3-7 key facts."""
 
         try:
             return await self._llm_compress(memories, importance_scores)
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             logger.warning(f"LLM compression failed, using heuristic: {e}")
             return self._heuristic_compress(memories, importance_scores)
 

@@ -174,7 +174,7 @@ class SessionService:
             if not result:
                 raise SessionNotFoundError(session_id)
             return True
-        except Exception as e:
+        except (OSError, ValueError) as e:
             raise SessionDeleteError(session_id, str(e)) from e
 
     async def session_exists(self, session_id: str) -> bool:

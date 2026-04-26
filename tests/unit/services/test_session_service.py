@@ -133,7 +133,7 @@ class TestSessionService:
         service._repo = mock_repo
 
         # Act & Assert
-        with pytest.raises(SessionDeleteError) as exc_info:
+        with pytest.raises(SessionNotFoundError) as exc_info:
             await service.delete_session("nonexistent")
 
         assert "nonexistent" in str(exc_info.value)

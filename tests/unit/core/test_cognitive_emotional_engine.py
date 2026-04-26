@@ -612,7 +612,7 @@ class TestEmotionalPathway:
         self, mock_llm_client, cognitive_output, current_emotional_state
     ):
         """Test fallback when LLM raises exception."""
-        mock_llm_client.chat.side_effect = Exception("LLM Error")
+        mock_llm_client.chat.side_effect = RuntimeError("LLM Error")
 
         pathway = EmotionalPathway(llm_client=mock_llm_client)
         result = await pathway.process("I am happy!", cognitive_output, current_emotional_state)

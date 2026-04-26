@@ -121,7 +121,7 @@ relationship: "friend"
     def test_validate_invalid_character_yaml(self, temp_config_dir):
         """Test validation catches invalid YAML."""
         char_file = temp_config_dir / "characters" / "invalid.yaml"
-        char_file.write_text("invalid: yaml: content: [", encoding="utf-8")
+        char_file.write_text("invalid yaml content", encoding="utf-8")
 
         validator = ConfigValidator(config_dir=temp_config_dir)
         is_valid = validator.validate_all()
@@ -211,7 +211,7 @@ relationship: "friend"
         """Test getting validation report for invalid config."""
         # Create invalid character
         char_file = temp_config_dir / "characters" / "invalid.yaml"
-        char_file.write_text("not: a: valid: structure", encoding="utf-8")
+        char_file.write_text("not a valid structure", encoding="utf-8")
 
         validator = ConfigValidator(config_dir=temp_config_dir)
         validator.validate_all()

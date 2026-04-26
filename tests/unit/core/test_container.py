@@ -291,7 +291,7 @@ class TestContainerThreadSafety:
                 errors.append(e)
 
         def resolve_worker(n):
-            with contextlib.suppress(Exception):
+            with contextlib.suppress(RuntimeError, KeyError):
                 resolved.append(container.resolve(f"svc_{n}"))
 
         threads = []

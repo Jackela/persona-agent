@@ -133,7 +133,7 @@ The summary should be written in third person and focus on factual content."""
 
             return self._parse_response(response.content, memories)
 
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             logger.error(f"Summarization failed: {e}")
             raise SummarizationError(
                 f"Failed to summarize {len(memories)} memories: {e}",

@@ -227,7 +227,7 @@ class Tool(ABC):
                     return ToolResult.error_result(
                         "Invalid expression. Only safe literal expressions are allowed."
                     )
-                except Exception as e:
+                except (ValueError, RuntimeError) as e:
                     return ToolResult.error_result(str(e))
     """
 
@@ -379,7 +379,7 @@ class Tool(ABC):
             result = await self.execute(context, **params)
             result.execution_time_ms = (time.time() - start_time) * 1000
             return result
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             return ToolResult.error_result(
                 f"Execution error: {e}",
                 execution_time_ms=(time.time() - start_time) * 1000,

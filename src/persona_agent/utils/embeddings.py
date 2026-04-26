@@ -44,7 +44,7 @@ class EmbeddingGenerator:
         try:
             embedding = self.model.encode(text, convert_to_tensor=False)
             return embedding.tolist()
-        except Exception as e:
+        except (ConnectionError, ValueError) as e:
             logger.error(f"Error generating embedding: {e}")
             return None
 
@@ -63,7 +63,7 @@ class EmbeddingGenerator:
         try:
             embeddings = self.model.encode(texts, convert_to_tensor=False)
             return [emb.tolist() for emb in embeddings]
-        except Exception as e:
+        except (ConnectionError, ValueError) as e:
             logger.error(f"Error generating batch embeddings: {e}")
             return [None] * len(texts)
 

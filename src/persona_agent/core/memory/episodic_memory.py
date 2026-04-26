@@ -75,10 +75,11 @@ class EpisodicMemory:
         entities: list[str] | None = None,
         embedding: list[float] | None = None,
         metadata: dict[str, Any] | None = None,
+        timestamp: datetime | None = None,
     ) -> MemoryEntry:
         """Store an episodic memory with importance scoring."""
         entry_id = str(uuid.uuid4())
-        now = datetime.now(UTC)
+        now = timestamp or datetime.now(UTC)
 
         episodic_entry = EpisodicEntry(
             id=entry_id,
@@ -145,7 +146,7 @@ class EpisodicMemory:
                         entry = self._episodes[memory_id]
                         similarity = 0.8  # Default high similarity from vector search
                         candidates.append((entry, similarity))
-            except Exception:
+            except (RuntimeError, ValueError, TypeError):
                 # Fall through to local search
                 pass
 

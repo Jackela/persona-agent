@@ -151,7 +151,7 @@ class SerperSearchProvider(SearchProvider):
                 "error": f"API error: {e}",
                 "results": [],
             }
-        except Exception as e:
+        except (ConnectionError, ValueError) as e:
             logger.error(f"Unexpected error in Serper search: {e}")
             return {
                 "query": query,
@@ -232,7 +232,7 @@ class DuckDuckGoSearchProvider(SearchProvider):
                     "source": "duckduckgo",
                 }
 
-        except Exception as e:
+        except (ConnectionError, ValueError) as e:
             logger.error(f"DuckDuckGo search error: {e}")
             return {
                 "query": query,
@@ -312,6 +312,6 @@ class WebSearchTool(Tool):
 
             return ToolResult.success_result(result)
 
-        except Exception as e:
+        except (ConnectionError, ValueError) as e:
             logger.exception("Web search failed")
             return ToolResult.error_result(f"Search failed: {e}")

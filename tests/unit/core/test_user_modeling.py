@@ -911,7 +911,7 @@ class TestAdaptiveUserModeling:
     @pytest.mark.asyncio
     async def test_query_user_preferences_error(self, modeling, mock_llm_client):
         """Test error handling in query."""
-        mock_llm_client.chat.side_effect = Exception("LLM error")
+        mock_llm_client.chat.side_effect = RuntimeError("LLM error")
 
         answer = await modeling.query_user_preferences("user1", "Test?")
 
@@ -992,7 +992,7 @@ class TestAdaptiveUserModeling:
     @pytest.mark.asyncio
     async def test_analyze_sentiment_error(self, modeling, mock_llm_client):
         """Test sentiment analysis error handling."""
-        mock_llm_client.chat.side_effect = Exception("LLM error")
+        mock_llm_client.chat.side_effect = RuntimeError("LLM error")
 
         sentiment = await modeling._analyze_sentiment("Test")
 
@@ -1343,7 +1343,7 @@ class TestEdgeCases:
         """Test LLM exception handling in extract_conclusions."""
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
-        client.chat.side_effect = Exception("LLM failed")
+        client.chat.side_effect = RuntimeError("LLM failed")
 
         conclusions = await modeling.extract_conclusions("Test", "", UserModel(user_id="u1"))
         assert conclusions == []
@@ -1353,7 +1353,7 @@ class TestEdgeCases:
         """Test LLM exception handling in detect_preferences."""
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
-        client.chat.side_effect = Exception("LLM failed")
+        client.chat.side_effect = RuntimeError("LLM failed")
 
         prefs = await modeling.detect_preferences("Test", UserModel(user_id="u1"))
         assert prefs == []
@@ -1363,7 +1363,7 @@ class TestEdgeCases:
         """Test LLM exception handling in detect_emotional_triggers."""
         client = AsyncMock()
         modeling = AdaptiveUserModeling(llm_client=client)
-        client.chat.side_effect = Exception("LLM failed")
+        client.chat.side_effect = RuntimeError("LLM failed")
 
         triggers = await modeling.detect_emotional_triggers("Test")
         assert triggers == {}

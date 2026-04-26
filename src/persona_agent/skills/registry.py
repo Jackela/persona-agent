@@ -123,7 +123,7 @@ class SkillRegistry:
             try:
                 registered = self.register_module(full_module_path)
                 count += registered
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.error(f"Failed to load skill module {module_name}: {e}")
 
         logger.info(f"Discovered {count} skills from {skills_dir}")
@@ -214,7 +214,7 @@ class SkillRegistry:
                             logger.info(f"Executing skill: {name}")
                             return await instance.execute(context)
 
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.error(f"Error executing skill '{name}': {e}")
                 continue
 

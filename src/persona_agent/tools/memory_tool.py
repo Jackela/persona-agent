@@ -117,5 +117,5 @@ class MemoryQueryTool(Tool):
             else:
                 return ToolResult.error_result(f"Unknown operation: {operation}")
 
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             return ToolResult.error_result(f"Memory query failed: {e}")

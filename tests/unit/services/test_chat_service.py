@@ -333,7 +333,7 @@ class TestChatService:
         # Arrange
         mock_session_repo.get_by_id.return_value = mock_session
         mock_character_service.get_character.return_value = mock_character_profile
-        mock_llm_client.chat_stream = Mock(side_effect=Exception("LLM API Error"))
+        mock_llm_client.chat_stream = Mock(side_effect=RuntimeError("LLM API Error"))
 
         with pytest.raises(ChatLLMError) as exc_info:
             async for _ in chat_service.send_message_stream("test-session-123", "Hello"):
@@ -533,7 +533,7 @@ class TestChatService:
     ):
         mock_session_repo.get_by_id.return_value = mock_session
         mock_character_service.get_character.return_value = mock_character_profile
-        mock_llm_client.chat_stream = Mock(side_effect=Exception("LLM API Error"))
+        mock_llm_client.chat_stream = Mock(side_effect=RuntimeError("LLM API Error"))
 
         with pytest.raises(ChatLLMError) as exc_info:
             async for _ in chat_service.send_message_stream("test-session-123", "Hello"):
@@ -554,7 +554,7 @@ class TestChatService:
     ):
         mock_session_repo.get_by_id.return_value = mock_session
         mock_character_service.get_character.return_value = mock_character_profile
-        mock_llm_client.chat_stream = Mock(side_effect=Exception("LLM API Error"))
+        mock_llm_client.chat_stream = Mock(side_effect=RuntimeError("LLM API Error"))
         original_message_count = len(mock_session.messages)
 
         with pytest.raises(ChatLLMError):

@@ -27,6 +27,7 @@ from persona_agent.utils.exceptions import (
     PersonaAgentError,
 )
 from persona_agent.utils.llm_client import LLMClient, LLMResponse
+from persona_agent.utils.exceptions import LLMError
 
 
 class ChatServiceError(PersonaAgentError):
@@ -459,7 +460,7 @@ class ChatService:
             ):
                 full_response_parts.append(token)
                 yield token
-        except Exception as e:
+        except (LLMError, ValueError, RuntimeError) as e:
             raise ChatLLMError(
                 f"Failed to get LLM response: {e}",
                 session_id=session_id,

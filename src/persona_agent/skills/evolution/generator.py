@@ -206,7 +206,7 @@ Provide the complete Python code for the new skill."""
             logger.info(f"Generated {mode.value} proposal for {skill_name}")
             return proposal
 
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"Failed to generate evolution: {e}")
             raise GenerationError(
                 f"Generation failed: {e}",

@@ -115,7 +115,7 @@ class MCPClient:
 
         try:
             return await tool.execute(**params)
-        except Exception as e:
+        except (ConnectionError, ValueError) as e:
             logger.error(f"Error executing tool {tool_name}: {e}")
             return MCPToolResult(
                 success=False,
@@ -258,7 +258,7 @@ class CalculatorTool(MCPTool):
 
             result = eval_node(tree.body)
             return MCPToolResult(success=True, data={"result": result})
-        except Exception as e:
+        except (ConnectionError, ValueError, SyntaxError) as e:
             return MCPToolResult(
                 success=False,
                 data=None,
@@ -336,7 +336,7 @@ class MemoryTool(MCPTool):
                     data=None,
                     error=f"Unknown operation: {operation}",
                 )
-        except Exception as e:
+        except (ConnectionError, ValueError) as e:
             return MCPToolResult(success=False, data=None, error=str(e))
 
     def get_schema(self) -> dict[str, Any]:

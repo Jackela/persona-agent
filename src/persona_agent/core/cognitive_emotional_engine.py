@@ -269,9 +269,12 @@ class CognitivePathway:
 
         # Get LLM response
         try:
+            if self.llm_client is None:
+                return self._fallback_cognitive_processing(user_input, working_memory)
+
             response = await self.llm_client.chat(
                 messages,
-                temperature=0.3,  # Lower temperature for more deterministic analysis
+                temperature=0.3,
                 max_tokens=800,
             )
 
@@ -475,6 +478,9 @@ class EmotionalPathway:
 
         # Get LLM response
         try:
+            if self.llm_client is None:
+                return self._fallback_emotional_processing(user_input, current_emotional_state)
+
             response = await self.llm_client.chat(
                 messages,
                 temperature=0.4,
@@ -506,7 +512,7 @@ class EmotionalPathway:
                 affect_influence=analysis.get("affect_influence", 0.5),
             )
 
-        except Exception:
+        except (RuntimeError, ValueError, TypeError):
             # Fallback to basic emotion processing
             return self._fallback_emotional_processing(user_input, current_emotional_state)
 

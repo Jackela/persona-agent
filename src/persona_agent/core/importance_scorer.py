@@ -133,7 +133,7 @@ Assistant: {assistant_message}
         if self.llm_client:
             try:
                 return await self._llm_score(user_message, assistant_message)
-            except Exception as e:
+            except (RuntimeError, ValueError, TypeError) as e:
                 logger.warning(f"LLM scoring failed, falling back to heuristic: {e}")
 
         return self._heuristic_score(user_message, assistant_message, context)

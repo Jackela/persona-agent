@@ -218,7 +218,7 @@ class SemanticMemory:
                 )
 
             return relationships
-        except Exception:
+        except (RuntimeError, ValueError, TypeError):
             return None
 
     def get_all_entities(self) -> list[str]:

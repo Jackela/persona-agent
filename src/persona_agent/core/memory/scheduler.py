@@ -180,7 +180,7 @@ class AutoCompactionScheduler:
                 logger.debug("Scheduler task cancelled")
                 break
 
-            except Exception as e:
+            except (RuntimeError, ValueError, TypeError) as e:
                 self._error_count += 1
                 logger.error(f"Scheduler error: {e}")
 
@@ -248,7 +248,7 @@ class AutoCompactionScheduler:
 
             return result
 
-        except Exception as e:
+        except (RuntimeError, OSError, ValueError) as e:
             logger.error(f"Compaction failed: {e}")
             raise
 

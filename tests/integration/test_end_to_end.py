@@ -157,8 +157,16 @@ class TestEndToEndChatWorkflow:
         # Register a test skill
         class TestSkill:
             name = "test_greeting"
+            priority = 1
+            enabled = True
 
-            def can_handle(self, context):
+            def __init__(self, config=None):
+                self.config = config
+
+            async def initialize(self):
+                pass
+
+            async def can_handle(self, context):
                 return "hello" in context.user_input.lower()
 
             async def execute(self, context):
@@ -187,10 +195,14 @@ class TestEndToEndChatWorkflow:
         memory_path = tmp_path / "memory"
         _ = MemoryStore(db_path=memory_path / "memory.db")  # noqa: F841
 
+        config_loader = ConfigLoader(config_dir=temp_config_dir)
+        persona_manager = PersonaManager(config_loader=config_loader)
+        persona_manager.load_character("default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
         )
-        # Note: Memory store integration would need proper setup
 
         # Send multiple messages
         for i in range(3):
@@ -201,8 +213,13 @@ class TestEndToEndChatWorkflow:
         self, temp_config_dir, test_characters, mock_llm_for_e2e
     ):
         """Test a full conversation session with context."""
+        config_loader = ConfigLoader(config_dir=temp_config_dir)
+        persona_manager = PersonaManager(config_loader=config_loader)
+        persona_manager.load_character("default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
         )
 
         conversation = [
@@ -291,24 +308,38 @@ class TestEndToEndMemoryWorkflow:
         from persona_agent.core.memory.compaction import MemoryCompactor
         from persona_agent.core.memory.summarizer import MemorySummarizer
 
-        memory_path = tmp_path / "memory"
-        memory = MemoryStore(db_path=memory_path / "memory.db")
+        from persona_agent.core.memory.episodic_memory import EpisodicMemory
+
+        memory = EpisodicMemory()
 
         # Add old memories
         from datetime import timedelta
 
         for i in range(10):
-            memory.episodic.add_episode(
+            await memory.store_episode(
                 content=f"Old conversation about Python - part {i}",
-                source="conversation",
+                importance=0.5,
+                metadata={"source": "conversation"},
                 timestamp=datetime.now(UTC) - timedelta(days=10),
             )
 
         # Create compactor with mock summarizer
         summarizer = Mock(spec=MemorySummarizer)
-        summarizer.summarize_memories = AsyncMock(return_value="Summary of Python conversations")
+        from persona_agent.core.memory.summarizer import SummaryMetadata
 
-        compactor = MemoryCompactor(memory.episodic, summarizer=summarizer)
+        summarizer.summarize = AsyncMock(
+            return_value=(
+                "Summary of Python conversations",
+                SummaryMetadata(
+                    original_count=10,
+                    key_entities=["Python"],
+                    key_themes=["learning"],
+                    confidence=0.9,
+                ),
+            )
+        )
+
+        compactor = MemoryCompactor(memory, summarizer=summarizer)
 
         # Run compaction
         result = await compactor.compact_memories(older_than_days=7)
@@ -319,19 +350,21 @@ class TestEndToEndMemoryWorkflow:
     async def test_auto_compaction_scheduler(self, tmp_path):
         """Test auto-compaction scheduler."""
         from persona_agent.core.memory.compaction import MemoryCompactor
+        from persona_agent.core.memory.episodic_memory import EpisodicMemory
         from persona_agent.core.memory.scheduler import AutoCompactionScheduler
 
-        memory_path = tmp_path / "memory"
-        memory = MemoryStore(db_path=memory_path / "memory.db")
+        memory = EpisodicMemory()
 
-        compactor = MemoryCompactor(memory.episodic)
+        compactor = MemoryCompactor(memory)
+        from persona_agent.core.memory.scheduler import SchedulerConfig
+
         scheduler = AutoCompactionScheduler(
             compactor=compactor,
-            schedule_hours=1,
+            config=SchedulerConfig(check_interval_hours=1),
         )
 
         # Should be able to start and stop
-        assert scheduler._running is False
+        assert scheduler.is_running() is False
 
 
 @pytest.mark.asyncio
@@ -450,8 +483,16 @@ class TestEndToEndErrorHandling:
         # Register a failing skill
         class FailingSkill:
             name = "failing"
+            priority = 1
+            enabled = True
 
-            def can_handle(self, context):
+            def __init__(self, config=None):
+                self.config = config
+
+            async def initialize(self):
+                pass
+
+            async def can_handle(self, context):
                 return True
 
             async def execute(self, context):
@@ -464,9 +505,14 @@ class TestEndToEndErrorHandling:
 
         registry.register_class(FailingSkill)
 
+        config_loader = ConfigLoader(config_dir=temp_config_dir)
+        persona_manager = PersonaManager(config_loader=config_loader)
+        persona_manager.load_character("default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
             skill_registry=registry,
+            persona_manager=persona_manager,
         )
 
         # Should still get a response (from LLM fallback)
@@ -477,8 +523,13 @@ class TestEndToEndErrorHandling:
         self, temp_config_dir, test_characters, mock_llm_for_e2e
     ):
         """Test that session persists even after errors."""
+        config_loader = ConfigLoader(config_dir=temp_config_dir)
+        persona_manager = PersonaManager(config_loader=config_loader)
+        persona_manager.load_character("default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
+            persona_manager=persona_manager,
         )
 
         # Successful interaction
@@ -509,8 +560,16 @@ class TestFullSystemIntegration:
         # Register a skill
         class IntegratedSkill:
             name = "integrated"
+            priority = 1
+            enabled = True
 
-            def can_handle(self, context):
+            def __init__(self, config=None):
+                self.config = config
+
+            async def initialize(self):
+                pass
+
+            async def can_handle(self, context):
                 return "test" in context.user_input.lower()
 
             async def execute(self, context):
@@ -522,9 +581,14 @@ class TestFullSystemIntegration:
 
         registry.register_class(IntegratedSkill)
 
+        config_loader = ConfigLoader(config_dir=temp_config_dir)
+        persona_manager = PersonaManager(config_loader=config_loader)
+        persona_manager.load_character("default")
+
         engine = AgentEngine(
             llm_client=mock_llm_for_e2e,
             skill_registry=registry,
+            persona_manager=persona_manager,
             planning_config=PlanningConfig(enable_parallel_execution=True),
             execution_config=ExecutionConfig(enable_parallel_execution=True),
         )

@@ -264,12 +264,12 @@ class MemoryCompactor:
                         summary_size = len(summary_entry.content)
                         result.bytes_saved += max(0, original_size - summary_size)
 
-                except Exception as e:
+                except (RuntimeError, ValueError, TypeError) as e:
                     error_msg = f"Failed to compact group {date_key}: {e}"
                     logger.error(error_msg)
                     result.errors.append(error_msg)
 
-        except Exception as e:
+        except (RuntimeError, OSError, ValueError) as e:
             error_msg = f"Compaction failed: {e}"
             logger.exception(error_msg)
             result.errors.append(error_msg)
@@ -285,7 +285,7 @@ class MemoryCompactor:
         older_than_days: int,
     ) -> list[EpisodicEntry]:
         """Get memories eligible for compaction."""
-        preserve_date = datetime.now(UTC) - timedelta(days=self.config.preserve_recent)
+        preserve_date = datetime.now(UTC) - timedelta(days=older_than_days)
 
         candidates: list[EpisodicEntry] = []
 
@@ -355,7 +355,11 @@ class MemoryCompactor:
             return None
 
         # Generate summary
-        summary_text, metadata = await self.summarizer.summarize(memories)
+        try:
+            summary_text, summary_metadata = await self.summarizer.summarize(memories)
+        except (RuntimeError, ValueError, TypeError) as e:
+            logger.error(f"Summarization failed for group {date_key}: {e}")
+            return None
 
         # Collect all entities from original memories
         all_entities: set[str] = set()
@@ -372,9 +376,9 @@ class MemoryCompactor:
                 "original_count": len(memories),
                 "date_range": date_key,
                 "compacted_at": datetime.now(UTC).isoformat(),
-                "key_entities": metadata.key_entities,
-                "key_themes": metadata.key_themes,
-                "confidence": metadata.confidence,
+                "key_entities": summary_metadata.key_entities,
+                "key_themes": summary_metadata.key_themes,
+                "confidence": summary_metadata.confidence,
             },
         )
 

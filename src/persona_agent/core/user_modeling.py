@@ -560,6 +560,9 @@ Important:
 - If no valid conclusions can be drawn, return empty list"""
 
         try:
+            if self.llm_client is None:
+                return []
+
             response = await self.llm_client.chat(
                 messages=[
                     {"role": "system", "content": "You are a precise logical reasoning engine."},
@@ -599,7 +602,7 @@ Important:
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse conclusions JSON: {e}")
             return []
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"Error extracting conclusions: {e}")
             return []
 
@@ -648,6 +651,9 @@ Important:
 - Be conservative - don't over-interpret"""
 
         try:
+            if self.llm_client is None:
+                return []
+
             response = await self.llm_client.chat(
                 messages=[
                     {"role": "system", "content": "You are a preference detection system."},
@@ -685,7 +691,7 @@ Important:
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse preferences JSON: {e}")
             return []
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"Error detecting preferences: {e}")
             return []
 
@@ -729,6 +735,9 @@ Important:
 - If no emotional triggers detected, return empty list"""
 
         try:
+            if self.llm_client is None:
+                return {}
+
             response = await self.llm_client.chat(
                 messages=[
                     {"role": "system", "content": "You are an emotional trigger detection system."},
@@ -762,7 +771,7 @@ Important:
         except json.JSONDecodeError as e:
             logger.warning(f"Failed to parse triggers JSON: {e}")
             return {}
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"Error detecting emotional triggers: {e}")
             return {}
 
@@ -879,7 +888,7 @@ Be concise but informative."""
             )
             return response.content.strip()
 
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"Error querying user preferences: {e}")
             return "I'm unable to answer that question at the moment."
 
@@ -1001,6 +1010,9 @@ Message: "{message}"
 Sentiment score:"""
 
         try:
+            if self.llm_client is None:
+                return 0.0
+
             response = await self.llm_client.chat(
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
@@ -1017,7 +1029,7 @@ Sentiment score:"""
                 return max(-1.0, min(1.0, sentiment))
             return 0.0
 
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.warning(f"Sentiment analysis failed: {e}")
             return 0.0
 

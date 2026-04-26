@@ -186,7 +186,7 @@ class ToolExecutor:
 
             return result
 
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.exception(f"Tool execution failed: {tool.name}")
             return ToolResult.error_result(f"Execution failed: {e}")
 

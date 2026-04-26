@@ -551,7 +551,7 @@ class ConsistencyValidator:
                 passed=passed,
             )
 
-        except Exception as e:
+        except (RuntimeError, ValueError, TypeError) as e:
             logger.error(f"Validation failed: {e}")
             # Return a failed validation report rather than crashing
             return ValidationReport(
@@ -641,7 +641,7 @@ class ConsistencyValidator:
             try:
                 score = await self._evaluate_dimension(dim_name, prompts[dim_name])
                 scores[dim_name] = score
-            except Exception as e:
+            except (RuntimeError, ValueError, TypeError) as e:
                 logger.error(f"Failed to score dimension {dim_name}: {e}")
                 scores[dim_name] = 0.0
 
@@ -666,6 +666,9 @@ class ConsistencyValidator:
         ]
 
         try:
+            if self.llm_client is None:
+                return 0.5
+
             llm_response = await self.llm_client.chat(
                 messages,
                 temperature=self.config.temperature_scoring,
@@ -689,7 +692,7 @@ class ConsistencyValidator:
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse dimension score JSON for {dim_name}: {e}")
             return 0.0
-        except Exception as e:
+        except (RuntimeError, ValueError) as e:
             logger.error(f"Error evaluating dimension {dim_name}: {e}")
             return 0.0
 
@@ -753,13 +756,16 @@ class ConsistencyValidator:
         ]
 
         try:
+            if self.llm_client is None:
+                return "No LLM client available for critique generation."
+
             llm_response = await self.llm_client.chat(
                 messages,
                 temperature=self.config.temperature_critique,
                 max_tokens=800,
             )
             return llm_response.content.strip()
-        except Exception as e:
+        except (RuntimeError, ValueError) as e:
             logger.error(f"Failed to generate critique: {e}")
             return f"Error generating critique: {str(e)}"
 
@@ -834,13 +840,16 @@ class ConsistencyValidator:
         ]
 
         try:
+            if self.llm_client is None:
+                return original
+
             llm_response = await self.llm_client.chat(
                 messages,
                 temperature=self.config.temperature_revision,
                 max_tokens=1000,
             )
             return llm_response.content.strip()
-        except Exception as e:
+        except (RuntimeError, ValueError) as e:
             logger.error(f"Failed to generate revision: {e}")
             return original  # Return original if revision fails
 

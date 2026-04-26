@@ -279,7 +279,7 @@ class RoleRAGRetriever:
             result.confidence_score = self._calculate_confidence(entities, retrieved)
             result.boundary_status = self._determine_boundary_status(entities)
 
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"RoleRAG retrieval failed: {e}")
             # Return empty result on failure
             result.boundary_status = "error"
@@ -424,7 +424,7 @@ Provide a brief summary (2-3 sentences) of the key entities and concepts mention
 
             response = await self.llm_client.chat(messages, temperature=0.3)
             return response.content.strip()
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.warning(f"Failed to generate hypothetical context: {e}")
             return query
 
@@ -668,7 +668,7 @@ Respond with ONLY: SPECIFIC, GENERAL, or OUT_OF_SCOPE"""
                     confidence=0.75,
                     explanation=f"LLM classified '{entity}' as GENERAL",
                 )
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.warning(f"LLM classification failed for '{entity}': {e}")
             return ClassifiedEntity(
                 name=entity,
@@ -840,7 +840,7 @@ class LayeredPromptEngine:
             )
 
             return result.retrieved_knowledge
-        except Exception as e:
+        except (ValueError, RuntimeError) as e:
             logger.error(f"RoleRAG retrieval failed: {e}")
             return []
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import os
+import platform
 import subprocess
 import sys
 import tempfile
@@ -281,7 +282,13 @@ class RestrictedPythonExecutor:
                 "locals": {k: v for k, v in exec_locals.items() if not k.startswith("_")},
             }
 
-        except Exception as e:
+        except SyntaxError as e:
+            return {
+                "success": False,
+                "error": f"Syntax error: {e}",
+                "output": "",
+            }
+        except (ValueError, RuntimeError, ZeroDivisionError) as e:
             return {
                 "success": False,
                 "error": str(e),
@@ -328,16 +335,18 @@ class ProcessSandbox:
         # Build wrapper script using string concatenation to avoid f-string issues
         wrapper_parts = [
             "import sys",
-            "import resource",
             "",
-            "# Set resource limits",
-            "def set_limits():",
-            f"    resource.setrlimit(resource.RLIMIT_CPU, ({self.config.cpu_time_limit_seconds}, {self.config.cpu_time_limit_seconds}))",
-            f"    max_bytes = {self.config.max_memory_mb} * 1024 * 1024",
-            "    resource.setrlimit(resource.RLIMIT_AS, (max_bytes, max_bytes))",
-            "    resource.setrlimit(resource.RLIMIT_FSIZE, (10*1024*1024, 10*1024*1024))",
-            "",
-            "set_limits()",
+            "# Set resource limits (Unix only)",
+            "try:",
+            "    import resource",
+            "    def set_limits():",
+            f"        resource.setrlimit(resource.RLIMIT_CPU, ({self.config.cpu_time_limit_seconds}, {self.config.cpu_time_limit_seconds}))",
+            f"        max_bytes = {self.config.max_memory_mb} * 1024 * 1024",
+            "        resource.setrlimit(resource.RLIMIT_AS, (max_bytes, max_bytes))",
+            "        resource.setrlimit(resource.RLIMIT_FSIZE, (10*1024*1024, 10*1024*1024))",
+            "    set_limits()",
+            "except (ImportError, ModuleNotFoundError):",
+            "    pass  # resource module not available on Windows",
             "",
             "# Execute user code",
             f'code = """{escaped_code}"""',
@@ -366,12 +375,12 @@ class ProcessSandbox:
             "    try:",
             "        mod = __import__(mod_name)",
             "        globals_dict[mod_name] = mod",
-            "    except Exception:",
+            "    except (ImportError, ModuleNotFoundError):",
             "        pass",
             "",
             "try:",
             "    exec(code, globals_dict, locals_dict)",
-            "except Exception as e:",
+            "except (ValueError, RuntimeError) as e:",
             '    print(f"Error: {e}", file=sys.stderr)',
             "    sys.exit(1)",
         ]
@@ -404,7 +413,7 @@ class ProcessSandbox:
             }
 
         finally:
-            with contextlib.suppress(Exception):
+            with contextlib.suppress(OSError):
                 os.unlink(script_path)
 
     def _execute_bash(self, command: str) -> dict[str, Any]:
@@ -449,7 +458,7 @@ class ProcessSandbox:
                 "success": False,
                 "error": f"Command timed out after {self.config.timeout_seconds}s",
             }
-        except Exception as e:
+        except (OSError, ValueError, RuntimeError) as e:
             return {
                 "success": False,
                 "error": str(e),

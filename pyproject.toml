@@ -91,7 +91,7 @@ select = [
     "C4",  # flake8-comprehensions
     "SIM", # flake8-simplify
 ]
-ignore = ["E501", "SIM102"]  # Line too long (handled by black), complex ifs
+ignore = ["E501", "SIM102", "SIM117", "B017"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/persona_agent/ui/web/server.py" = ["B008"]

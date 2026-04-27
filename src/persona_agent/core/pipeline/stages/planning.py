@@ -7,7 +7,6 @@ from persona_agent.core.pipeline.context import ChatContext, StageResult
 from persona_agent.core.planning import PlanningEngine
 from persona_agent.core.planning.executor import PlanExecutor
 from persona_agent.core.planning.models import Plan
-from persona_agent.exceptions import PlanningError
 
 logger = logging.getLogger(__name__)
 

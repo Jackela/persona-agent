@@ -31,10 +31,11 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Enforce dev branch workflow
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
           # Allow merges from 'future' (major feature/release branch) and 'dev' to main
-          HEAD_REF="${{ github.head_ref }}"
-          BASE_REF="${{ github.base_ref }}"
           if [ "$BASE_REF" = "main" ] || [ "$BASE_REF" = "master" ]; then
             if [ "$HEAD_REF" = "future" ] || [ "$HEAD_REF" = "dev" ] || [ "$HEAD_REF" = "release"* ]; then
               echo "✅ Allowing $HEAD_REF → $BASE_REF merge (whitelisted branch)"

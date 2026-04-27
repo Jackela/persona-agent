@@ -12,7 +12,6 @@ from __future__ import annotations
 import ast
 import contextlib
 import os
-import platform
 import subprocess
 import sys
 import tempfile

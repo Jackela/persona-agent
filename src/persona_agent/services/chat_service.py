@@ -24,10 +24,10 @@ from persona_agent.services.session_service import (
     SessionService,
 )
 from persona_agent.utils.exceptions import (
+    LLMError,
     PersonaAgentError,
 )
 from persona_agent.utils.llm_client import LLMClient, LLMResponse
-from persona_agent.utils.exceptions import LLMError
 
 
 class ChatServiceError(PersonaAgentError):

@@ -11,7 +11,6 @@ from persona_agent.core.planning.exceptions import (
     InvalidPlanStateError,
     PlanExecutionError,
     PlanNotFoundError,
-    TaskExecutionError,
 )
 from persona_agent.core.planning.executor import PlanExecutor, TaskExecutor
 from persona_agent.core.planning.models import (

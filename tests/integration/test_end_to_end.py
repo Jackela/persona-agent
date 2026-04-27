@@ -306,9 +306,8 @@ class TestEndToEndMemoryWorkflow:
     async def test_memory_compaction_flow(self, tmp_path):
         """Test complete memory compaction workflow."""
         from persona_agent.core.memory.compaction import MemoryCompactor
-        from persona_agent.core.memory.summarizer import MemorySummarizer
-
         from persona_agent.core.memory.episodic_memory import EpisodicMemory
+        from persona_agent.core.memory.summarizer import MemorySummarizer
 
         memory = EpisodicMemory()
 

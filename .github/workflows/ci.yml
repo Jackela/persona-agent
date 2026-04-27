@@ -355,7 +355,7 @@ jobs:
           bash <(curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
 
       - name: Run actionlint
-        run: ./actionlint -color -ignore 'is potentially untrusted'
+        run: ./actionlint -color -ignore 'SC2086'
 
   # ============================================
   # Docker Build Validation

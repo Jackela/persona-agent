@@ -22,5 +22,14 @@
   "candidate_unit": {
     "passed": 1094
   },
-  "skill_evolution_fixture": "temporary directory, tracked historical fixtures preserved"
+  "skill_evolution_fixture": "temporary directory, tracked historical fixtures preserved",
+  "branch_rule": {
+    "baseline_release_exit": 1,
+    "candidate": {
+      "release/ai-first-repair-20261009": 0,
+      "dev": 0,
+      "fix/unapproved": 1
+    }
+  },
+  "workflow_actionlint": "passed after restoring existing release/* glob rule"
 }

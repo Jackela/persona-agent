@@ -18,3 +18,5 @@ PYTHONPATH=src python scripts/check_integration.py
 基线已有 105 项集成测试通过，但旧 CI 用 `|| true` 吞掉失败。修复后仍运行这 105 项，并以故意失败的独立临时测试验证旧命令返回 0、新入口返回 1。结构化记录见 `maintenance-evidence.json`。
 
 本修复不将历史报告改写成全系统验收。CI 仍有历史类型检查、文档和安全审计的非阻断项，未在本次改成阻断；它们的绿灯不得被描述为对应检查全部通过。生产密钥、真实模型、Chromadb 功能、容器和现场交互未在本次本地验证。
+
+既有分支保护使用单中括号比较 `release*`，导致预期允许的 release 分支也被拒绝。现使用 Bash 的模式匹配保留 release/*、dev、future 白名单，并检查普通 fix 分支仍返回非零。

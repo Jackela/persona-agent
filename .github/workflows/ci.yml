@@ -37,7 +37,7 @@ jobs:
         run: |
           # Allow merges from 'future' (major feature/release branch) and 'dev' to main
           if [ "$BASE_REF" = "main" ] || [ "$BASE_REF" = "master" ]; then
-            if [ "$HEAD_REF" = "future" ] || [ "$HEAD_REF" = "dev" ] || [ "$HEAD_REF" = "release"* ]; then
+            if [[ "$HEAD_REF" == "future" || "$HEAD_REF" == "dev" || "$HEAD_REF" == release/* ]]; then
               echo "✅ Allowing $HEAD_REF → $BASE_REF merge (whitelisted branch)"
               exit 0
             fi

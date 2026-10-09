@@ -23,7 +23,7 @@ from persona_agent.skills.registry import SkillRegistry
 
 
 @pytest.fixture
-def evolution_config():
+def evolution_config(temp_evolution_dir: Path):
     """Create an evolution configuration for testing."""
     return EvolutionConfig(
         enabled=True,
@@ -31,7 +31,7 @@ def evolution_config():
         success_rate_threshold=0.7,
         max_proposals_per_skill=2,
         proposal_expiry_hours=24.0,
-        storage_path="./test_data/skill_evolution",
+        storage_path=str(temp_evolution_dir),
     )
 
 

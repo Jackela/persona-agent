@@ -141,9 +141,12 @@ jobs:
         run: |
           # Run unit tests only (faster, more reliable)
           PYTHONPATH="${PYTHONPATH}:$(pwd)/src" pytest tests/unit -v --timeout=120
-          
-          # Run integration tests separately (slower, more thorough)
-          PYTHONPATH="${PYTHONPATH}:$(pwd)/src" pytest tests/integration -v --timeout=180 || true
+
+        env:
+          PYTEST_CURRENT_TEST: "1"
+
+      - name: Run offline integration checks
+        run: PYTHONPATH="${PYTHONPATH}:$(pwd)/src" python scripts/check_integration.py
         env:
           PYTEST_CURRENT_TEST: "1"
 

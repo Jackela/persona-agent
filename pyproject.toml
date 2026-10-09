@@ -31,6 +31,7 @@ dependencies = [
     "openai>=1.0",
     "anthropic>=0.18",
     "httpx>=0.25",
+    "tenacity>=8.0",
     "aiofiles>=23.0",
     "aiosqlite>=0.19",
     "chromadb>=0.4",
@@ -62,10 +63,10 @@ persona-agent = "persona_agent.ui.cli:main"
 pa = "persona_agent.ui.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/persona-agent"
-Repository = "https://github.com/yourusername/persona-agent"
-Documentation = "https://github.com/yourusername/persona-agent/blob/main/docs"
-Issues = "https://github.com/yourusername/persona-agent/issues"
+Homepage = "https://github.com/Jackela/persona-agent"
+Repository = "https://github.com/Jackela/persona-agent"
+Documentation = "https://github.com/Jackela/persona-agent/tree/main/docs"
+Issues = "https://github.com/Jackela/persona-agent/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/persona_agent"]

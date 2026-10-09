@@ -1,0 +1,35 @@
+{
+  "baseline_sha": "06a34392ec582db96c9f7697a3ed2b43b1d1eb3d",
+  "baseline_integration": {
+    "passed": 105
+  },
+  "candidate_integration": {
+    "passed": 105
+  },
+  "negative_probe": {
+    "deliberate_assertion": true,
+    "baseline_masked_exit": 0,
+    "candidate_exit": 1
+  },
+  "scope": "offline services and SQLite; LLM mocked",
+  "not_verified": [
+    "real model APIs",
+    "Chromadb",
+    "MCP host",
+    "deployment",
+    "historical advisory checks"
+  ],
+  "candidate_unit": {
+    "passed": 1094
+  },
+  "skill_evolution_fixture": "temporary directory, tracked historical fixtures preserved",
+  "branch_rule": {
+    "baseline_release_exit": 1,
+    "candidate": {
+      "release/ai-first-repair-20261009": 0,
+      "dev": 0,
+      "fix/unapproved": 1
+    }
+  },
+  "workflow_actionlint": "passed after restoring existing release/* glob rule"
+}

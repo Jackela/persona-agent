@@ -1,14 +1,4 @@
-#PB|# 🤖 Persona-Agent
-#KM|
-#TV|> 一个本地角色扮演 AI Agent，支持动态人格切换、情绪状态管理和语言风格定制
-#RW|
-#TS|[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-#HN|[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-#PB|[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-#ZV|[![CI](https://github.com/yourusername/persona-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/persona-agent/actions/workflows/ci.yml)
-#JY|[![Coverage](https://codecov.io/gh/yourusername/persona-agent/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/persona-agent)
-#JV|[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-#XW|
+# 🤖 Persona-Agent
 
 > 一个本地角色扮演 AI Agent，支持动态人格切换、情绪状态管理和语言风格定制
 
@@ -17,6 +7,10 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ---
+
+## 维护与验证
+
+本仓库是使用 AI 协助维护的本地人格与记忆实验。Markdown 是文档母稿，源码与可运行检查定义当前实现；旧完成报告和 CI 绿灯不代表外部模型、宿主环境或用户验收。维护入口与本次证据见 [MAINTENANCE.md](MAINTENANCE.md)。
 
 ## ✨ 特性
 
@@ -35,7 +29,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/persona-agent.git
+git clone https://github.com/Jackela/persona-agent.git
 cd persona-agent
 
 # 安装依赖

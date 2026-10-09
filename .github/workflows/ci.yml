@@ -37,7 +37,7 @@ jobs:
         run: |
           # Allow merges from 'future' (major feature/release branch) and 'dev' to main
           if [ "$BASE_REF" = "main" ] || [ "$BASE_REF" = "master" ]; then
-            if [ "$HEAD_REF" = "future" ] || [ "$HEAD_REF" = "dev" ] || [ "$HEAD_REF" = "release"* ]; then
+            if [[ "$HEAD_REF" == "future" || "$HEAD_REF" == "dev" || "$HEAD_REF" == release/* ]]; then
               echo "✅ Allowing $HEAD_REF → $BASE_REF merge (whitelisted branch)"
               exit 0
             fi
@@ -141,9 +141,12 @@ jobs:
         run: |
           # Run unit tests only (faster, more reliable)
           PYTHONPATH="${PYTHONPATH}:$(pwd)/src" pytest tests/unit -v --timeout=120
-          
-          # Run integration tests separately (slower, more thorough)
-          PYTHONPATH="${PYTHONPATH}:$(pwd)/src" pytest tests/integration -v --timeout=180 || true
+
+        env:
+          PYTEST_CURRENT_TEST: "1"
+
+      - name: Run offline integration checks
+        run: PYTHONPATH="${PYTHONPATH}:$(pwd)/src" python scripts/check_integration.py
         env:
           PYTEST_CURRENT_TEST: "1"
 
